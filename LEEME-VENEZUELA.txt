@@ -1,0 +1,37 @@
+TIENDA VENEZUELA — ACTUALIZACION (carpeta public_html/venezuela19/)
+====================================================================
+
+QUE CAMBIA
+- Catalogo y fichas leen los productos REALES de la base de la tienda de Chile (no se cargan dos veces).
+  Tu panel decide cuales se venden en Venezuela y su precio en USD.
+- Precios en USD/USDT y en Bs con tasa BCV automatica (2 fuentes de internet) y tasa manual de respaldo.
+- Un producto por pedido, sin carrito: el cliente elige opcion, pone sus datos y paga por Binance o PagoMovil,
+  ve los datos y el monto exacto, sube su comprobante y a ti te llega el aviso al panel (y por correo).
+- Buscador con sugerencias, filtros (marca, categoria, duracion) y orden. Resenas propias con "compra verificada"
+  (se piden en el correo de entrega y las apruebas en el panel). Recordatorio automatico a mitad del plazo y
+  cancelacion automatica al vencer (por defecto 4 h; no cancela pedidos con comprobante).
+- El diseno (colores, fuentes, tarjetas, banner, marcas) es el mismo; WhatsApp sigue como apoyo.
+- Si la base no esta configurada, la tienda sigue funcionando como antes (catalogo fijo + pedido por WhatsApp).
+
+INSTALACION (sin editar archivos)
+1. Respaldo de la carpeta venezuela19/.
+2. Sube TODO el contenido de este ZIP a venezuela19/, sobrescribiendo. No borres imagenes/.
+   (Ya no vienen test-trustoo.php ni clear-opcache-ve.php: borralos del servidor si siguen alli.)
+3. Abre  https://digital-alquimia.com/venezuela19/ve-admin/instalar.php  y llena el formulario:
+   - Base de datos: la MISMA de Chile (DB_NAME/DB_USER/DB_PASS de su config.php).
+   - Clave nueva del panel, datos SMTP (delivery@digital-alquimia.com) y correo donde recibes avisos.
+   El instalador prueba la conexion, crea las tablas ve_* y escribe config-ve.php por ti. Despues se borra solo.
+4. Entra a  .../venezuela19/ve-admin/  ->  Ajustes:  datos de Binance (y QR) y de PagoMovil, tasa manual de respaldo,
+   plazo de pago. Pulsa "Enviar correo de prueba".
+5. Panel -> Productos -> "Importar los 10 productos actuales": busca el producto equivalente en Chile y carga los
+   precios USD de hoy. Revisa cada uno (en Chile hay ofertas duplicadas; elige la que corresponda) y agrega mas productos.
+6. Haz un pedido de prueba con un producto barato: debe llegar el correo con los datos de pago, el aviso en el panel
+   al subir el comprobante, y poder marcarlo pagado / entregado.
+7. Opcional: tarea cron de cPanel (comando en Ajustes) para que recordatorios y cancelaciones sean puntuales.
+   Sin cron, se procesan cuando alguien visita la tienda o abres el panel.
+
+NOTAS
+- La pagina publicada es venezuela-catalogo3.php: sigue funcionando (carga la portada nueva). Tambien sirve venezuela-catalogo.php.
+- Los pedidos de Venezuela van en tablas aparte (ve_orders...), no aparecen en el panel de Chile ni afectan sus estadisticas.
+- Stock: si una opcion tiene "stock manual" en Chile, se descuenta/devuelve igual que alla.
+- Los montos en Bs quedan fijos con la tasa del momento del pedido.

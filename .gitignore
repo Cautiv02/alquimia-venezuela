@@ -1,0 +1,9 @@
+# Generados por el instalador o en uso en el servidor (no van a git)
+config-ve.php
+comprobantes/
+ve-schema.ok
+bcv-rate-cache.json
+trustoo-reviews-cache.json
+imagenes/binance-qr.*
+*.log
+error_log
