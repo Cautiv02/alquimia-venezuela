@@ -68,7 +68,7 @@ function ve_db_ready(): bool {
 
 function ve_ensure_schema(PDO $pdo): void {
     $marker = __DIR__ . '/ve-schema.ok';
-    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '3') return;
+    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '4') return;
     $t = ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_settings (k VARCHAR(60) NOT NULL PRIMARY KEY, v TEXT NOT NULL)$t");
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_products (
@@ -97,9 +97,16 @@ function ve_ensure_schema(PDO $pdo): void {
         id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, order_id INT UNSIGNED NOT NULL, product_id INT UNSIGNED NOT NULL,
         product_title VARCHAR(255) NOT NULL, author VARCHAR(120) NOT NULL, rating TINYINT UNSIGNED NOT NULL, content TEXT NOT NULL,
         verified TINYINT(1) NOT NULL DEFAULT 1, published TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
-        UNIQUE KEY uq_order (order_id), KEY (product_id, published), KEY (published, created_at))$t");
+        UNIQUE KEY uq_order_prod (order_id, product_id), KEY (product_id, published), KEY (published, created_at))$t");
+    // Carrito: un pedido puede tener varios productos; una reseña por producto y pedido
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ve_order_items (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, order_id INT UNSIGNED NOT NULL, product_id INT UNSIGNED NOT NULL, variant_id INT UNSIGNED NOT NULL,
+        product_title VARCHAR(255) NOT NULL, variant_title VARCHAR(120) NOT NULL DEFAULT '', unit_usd DECIMAL(10,2) NOT NULL, qty TINYINT UNSIGNED NOT NULL DEFAULT 1,
+        KEY (order_id))$t");
+    try { $pdo->exec('ALTER TABLE ve_reviews DROP INDEX uq_order'); } catch (Throwable $e) { /* ya no existe */ }
+    try { $pdo->exec('ALTER TABLE ve_reviews ADD UNIQUE KEY uq_order_prod (order_id, product_id)'); } catch (Throwable $e) { /* ya existe */ }
     try { $pdo->exec('ALTER TABLE ve_products ADD COLUMN image VARCHAR(200) NULL'); } catch (Throwable $e) { /* ya existe */ }
-    @file_put_contents($marker, '3');
+    @file_put_contents($marker, '4');
 }
 
 /* ───────────── Ajustes (editables en el panel) ───────────── */
@@ -204,6 +211,54 @@ function ve_notify(string $type, string $message, ?int $orderId = null, bool $em
     }
 }
 
+/* ───────────── Carrito (cookie con opción:cantidad; los precios SIEMPRE se leen de la base) ───────────── */
+function ve_cart_raw(): array {
+    $out = [];
+    foreach (explode('|', (string) ($_COOKIE['ve_cart'] ?? '')) as $part) {
+        if (!preg_match('/^(\d{1,9}):(\d{1,2})$/', $part, $m) || (int) $m[1] < 1) continue;
+        $out[(int) $m[1]] = max(1, min(10, (int) $m[2]));
+        if (count($out) >= 30) break;
+    }
+    return $out;
+}
+function ve_cart_save(array $cart): void {
+    $parts = [];
+    foreach ($cart as $vid => $q) if ((int) $q > 0 && (int) $vid > 0) $parts[] = (int) $vid . ':' . min(10, (int) $q);
+    $val = implode('|', $parts);
+    $_COOKIE['ve_cart'] = $val;
+    if (headers_sent()) return;
+    $path = rtrim((string) (parse_url(ve_site_url(), PHP_URL_PATH) ?: ''), '/') . '/';
+    setcookie('ve_cart', $val, ['expires' => $val === '' ? time() - 3600 : time() + 30 * 86400, 'path' => $path,
+        'secure' => strpos(ve_site_url(), 'https://') === 0, 'httponly' => true, 'samesite' => 'Lax']);
+}
+function ve_cart_count(): int { return array_sum(ve_cart_raw()); }
+
+/* ───────────── Ítems de un pedido ───────────── */
+/** Líneas del pedido. Los pedidos anteriores al carrito no tienen ítems: se arma uno con los datos del propio pedido. */
+function ve_order_items(array $o): array {
+    try {
+        $st = ve_pdo()->prepare('SELECT * FROM ve_order_items WHERE order_id = :o ORDER BY id'); $st->execute([':o' => $o['id']]);
+        $rows = $st->fetchAll(); if ($rows) return $rows;
+    } catch (Throwable $e) { }
+    return [['order_id' => $o['id'], 'product_id' => $o['product_id'], 'variant_id' => $o['variant_id'], 'product_title' => $o['product_title'],
+             'variant_title' => $o['variant_title'], 'unit_usd' => $o['price_usd'], 'qty' => 1]];
+}
+function ve_items_text(array $items): string {
+    $t = [];
+    foreach ($items as $it) $t[] = $it['product_title'] . ($it['variant_title'] !== '' ? ' (' . $it['variant_title'] . ')' : '') . ((int) $it['qty'] > 1 ? ' ×' . (int) $it['qty'] : '');
+    return implode('; ', $t);
+}
+/** Tabla de productos para los correos. */
+function ve_items_html(array $o): string {
+    $rows = '';
+    foreach (ve_order_items($o) as $it) {
+        $rows .= '<tr><td style="padding:6px 0;border-bottom:1px solid #eee">' . h($it['product_title']) . ($it['variant_title'] !== '' ? ' — ' . h($it['variant_title']) : '')
+            . ((int) $it['qty'] > 1 ? ' <b>×' . (int) $it['qty'] . '</b>' : '') . '</td><td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right;white-space:nowrap">'
+            . number_format((float) $it['unit_usd'] * (int) $it['qty'], 2) . ' USD</td></tr>';
+    }
+    return '<table style="width:100%;border-collapse:collapse;font-size:14px;margin:8px 0">' . $rows . '</table>';
+}
+
 /* ───────────── Pedidos ───────────── */
 function ve_order_by_code(string $code): ?array {
     $st = ve_pdo()->prepare('SELECT * FROM ve_orders WHERE code = :c LIMIT 1'); $st->execute([':c' => strtoupper(trim($code))]);
@@ -233,21 +288,24 @@ function ve_payment_block_html(array $o): string {
 }
 
 function ve_mail_order_created(array $o): void {
-    $inner = '<p>Hola ' . h($o['name']) . ', recibimos tu pedido <b>' . h($o['order_number']) . '</b>: ' . h($o['product_title'] . ($o['variant_title'] !== '' ? ' — ' . $o['variant_title'] : '')) . '.</p>'
+    $inner = '<p>Hola ' . h($o['name']) . ', recibimos tu pedido <b>' . h($o['order_number']) . '</b>:</p>' . ve_items_html($o)
         . '<p>Para activarlo, paga por <b>' . h(ve_method_label($o['method'])) . '</b> y sube tu comprobante:</p>' . ve_payment_block_html($o)
         . ve_mail_button(ve_pay_url($o), 'Subir mi comprobante')
         . '<p>Tienes <b>' . ve_pay_hours() . ' horas</b> para pagar; pasado ese plazo sin comprobante el pedido se cancela solo.</p>';
     ve_send_mail($o['email'], 'Tu pedido ' . $o['order_number'] . ' — datos de pago', ve_mail_html($inner), VE_NOTIFY_EMAIL);
 }
 
-/** Cancela un pedido pendiente y devuelve la unidad al stock manual. true si lo canceló. */
+/** Cancela un pedido pendiente y devuelve las unidades al stock manual. true si lo canceló. */
 function ve_cancel_order(int $orderId, string $reason, bool $email = true): bool {
     $pdo = ve_pdo();
     $up = $pdo->prepare("UPDATE ve_orders SET status = 'anulado', cancel_reason = :r, updated_at = NOW() WHERE id = :id AND status IN ('pendiente')");
     $up->execute([':r' => mb_substr($reason, 0, 120), ':id' => $orderId]);
     if (!$up->rowCount()) return false;
     $o = ve_order_by_id($orderId);
-    try { $pdo->prepare('UPDATE product_variants SET stock_manual = stock_manual + 1 WHERE id = :v AND stock_manual IS NOT NULL')->execute([':v' => $o['variant_id']]); } catch (Throwable $e) { }
+    try {
+        $back = $pdo->prepare('UPDATE product_variants SET stock_manual = stock_manual + :q WHERE id = :v AND stock_manual IS NOT NULL');
+        foreach (ve_order_items($o) as $it) $back->execute([':q' => max(1, (int) $it['qty']), ':v' => (int) $it['variant_id']]);
+    } catch (Throwable $e) { }
     if ($email && $o) {
         ve_send_mail($o['email'], 'Pedido ' . $o['order_number'] . ' cancelado', ve_mail_html(
             '<p>Hola ' . h($o['name']) . ', tu pedido <b>' . h($o['order_number']) . '</b> (' . h($o['product_title']) . ') fue cancelado: ' . h($reason) . '.</p>'
@@ -327,7 +385,7 @@ function ve_proofs_dir(): string {
 }
 
 /* ───────────── Reseñas propias ───────────── */
-function ve_review_link(int $orderId): string { return ve_site_url() . '/venezuela-resena.php?o=' . $orderId . '&k=' . ve_token('resena', $orderId); }
+function ve_review_link(int $orderId, int $productId = 0): string { return ve_site_url() . '/venezuela-resena.php?o=' . $orderId . '&k=' . ve_token('resena', $orderId) . ($productId ? '&p=' . $productId : ''); }
 function ve_request_review(int $orderId): bool {
     $o = ve_order_by_id($orderId);
     if (!$o || !in_array($o['status'], ['pagado', 'entregado'], true)) return false;
@@ -349,14 +407,14 @@ function ve_review_stats(): array {
 /* ───────────── Correos de estado ───────────── */
 function ve_mail_paid(array $o): bool {
     return ve_send_mail($o['email'], 'Pago confirmado — pedido ' . $o['order_number'], ve_mail_html(
-        '<p>Hola ' . h($o['name']) . ', ¡recibimos tu pago del pedido <b>' . h($o['order_number']) . '</b> (' . h($o['product_title']) . ')!</p>'
+        '<p>Hola ' . h($o['name']) . ', ¡recibimos tu pago del pedido <b>' . h($o['order_number']) . '</b>!</p>' . ve_items_html($o)
         . '<p>Estamos preparando tu entrega. Te la enviamos por WhatsApp y correo en cuanto esté lista.</p>'
         . ve_mail_button(ve_pay_url($o), 'Ver el estado de mi pedido')), VE_NOTIFY_EMAIL);
 }
 function ve_mail_delivered(array $o, string $message = ''): bool {
     $extra = trim($message) !== '' ? '<div style="background:#f6f2e6;padding:12px 14px;border-radius:8px;">' . nl2br(h($message)) . '</div>' : '';
     return ve_send_mail($o['email'], 'Tu pedido ' . $o['order_number'] . ' fue entregado', ve_mail_html(
-        '<p>Hola ' . h($o['name']) . ', tu pedido <b>' . h($o['order_number']) . '</b> (' . h($o['product_title'] . ($o['variant_title'] !== '' ? ' — ' . $o['variant_title'] : '')) . ') ya fue entregado. Revisa tu WhatsApp: ahí tienes tu licencia con las instrucciones.</p>'
+        '<p>Hola ' . h($o['name']) . ', tu pedido <b>' . h($o['order_number']) . '</b> ya fue entregado:</p>' . ve_items_html($o) . '<p> Revisa tu WhatsApp: ahí tienes tu licencia con las instrucciones.</p>'
         . $extra . '<p>Si necesitas ayuda para instalar o activar, escríbenos: el soporte está incluido.</p>'
         . ve_mail_button(ve_review_link((int) $o['id']), 'Dejar mi opinión (compra verificada)')), VE_NOTIFY_EMAIL);
 }

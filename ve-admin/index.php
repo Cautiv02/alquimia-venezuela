@@ -14,7 +14,7 @@ $where = ['1=1']; $args = [];
 if ($f === 'revisar') $where[] = "o.status = 'pendiente' AND EXISTS (SELECT 1 FROM ve_proofs p WHERE p.order_id = o.id)";
 elseif ($f === 'pendiente') $where[] = "o.status = 'pendiente' AND NOT EXISTS (SELECT 1 FROM ve_proofs p WHERE p.order_id = o.id)";
 elseif ($f !== 'todos') { $where[] = 'o.status = :s'; $args[':s'] = $f; }
-if ($q !== '') { $where[] = '(o.order_number LIKE :q OR o.email LIKE :q OR o.name LIKE :q OR o.phone LIKE :q OR o.code LIKE :q OR o.product_title LIKE :q)'; $args[':q'] = '%' . $q . '%'; }
+if ($q !== '') { $where[] = '(o.order_number LIKE :q OR o.email LIKE :q OR o.name LIKE :q OR o.phone LIKE :q OR o.code LIKE :q OR o.product_title LIKE :q OR EXISTS (SELECT 1 FROM ve_order_items i WHERE i.order_id = o.id AND i.product_title LIKE :q))'; $args[':q'] = '%' . $q . '%'; }
 $st = $pdo->prepare("SELECT o.*, (SELECT COUNT(*) FROM ve_proofs p WHERE p.order_id = o.id) AS proofs FROM ve_orders o WHERE " . implode(' AND ', $where) . " ORDER BY o.id DESC LIMIT 200");
 $st->execute($args); $orders = $st->fetchAll();
 $counts = [];

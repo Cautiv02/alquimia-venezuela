@@ -32,12 +32,12 @@ foreach ($facetOpts as &$fo) { arsort($fo); } unset($fo);
 <title>Alquimia Digital Venezuela — Software original</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <?php include __DIR__ . '/venezuela-styles.php'; ?>
 <style>
-  /* Esta página (portada) usa la fuente anterior — la de producto usa Outfit + Manrope */
+  /* Tipografía de títulos unificada: Source Serif 4 (formal) + Manrope */
   :root {
-    --serif: 'Fraunces', Georgia, serif;
+    --serif: 'Source Serif 4', Georgia, serif;
     --sans: 'IBM Plex Sans', -apple-system, sans-serif;
   }
 </style>

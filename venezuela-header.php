@@ -9,6 +9,11 @@
       <a href="./#resenas">Reseñas de Clientes</a>
     </nav>
     <div class="nav-actions">
+      <?php $cartN = function_exists('ve_cart_count') ? ve_cart_count() : 0; ?>
+      <a class="cart-link" href="venezuela-carrito.php" aria-label="Carrito de compras<?= $cartN ? ' (' . $cartN . ')' : '' ?>">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6"/></svg>
+        <?php if ($cartN): ?><span class="cart-badge"><?= (int) $cartN ?></span><?php endif; ?>
+      </a>
       <span class="flag-icon" title="Venezuela">
         <svg width="30" height="20" viewBox="0 0 48 32" xmlns="http://www.w3.org/2000/svg">
           <rect width="48" height="32" rx="5" fill="#00247D"/>

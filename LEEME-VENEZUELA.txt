@@ -5,7 +5,7 @@ QUE CAMBIA
 - Catalogo y fichas leen los productos REALES de la base de la tienda de Chile (no se cargan dos veces).
   Tu panel decide cuales se venden en Venezuela y su precio en USD.
 - Precios en USD/USDT y en Bs con tasa BCV automatica (2 fuentes de internet) y tasa manual de respaldo.
-- Un producto por pedido, sin carrito: el cliente elige opcion, pone sus datos y paga por Binance o PagoMovil,
+- Carrito de compras: varios productos (hasta 10 unidades de cada uno) en un solo pedido y un solo pago; el cliente pone sus datos y paga por Binance o PagoMovil,
   ve los datos y el monto exacto, sube su comprobante y a ti te llega el aviso al panel (y por correo).
 - Buscador con sugerencias, filtros (marca, categoria, duracion) y orden. Resenas propias con "compra verificada"
   (se piden en el correo de entrega y las apruebas en el panel). Recordatorio automatico a mitad del plazo y

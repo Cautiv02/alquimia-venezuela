@@ -4,7 +4,7 @@
     --gold: #B9862A; --gold-bright: #D4A03E; --teal: #2A7D74;
     --ash: #7A7566; --line: rgba(28,26,20,0.10);
     --text: #211E17; --text-dim: #5C5749; --radius-card: 14px;
-    --serif: 'Outfit', -apple-system, sans-serif;
+    --serif: 'Source Serif 4', Georgia, serif;
     --sans: 'Manrope', -apple-system, sans-serif;
     --dark: #3E5C76; --dark-2: #4C7093;
     --text-on-dark: #F2EFE6; --text-on-dark-dim: #C9D6E0;
@@ -260,4 +260,32 @@
   .pr-review .top b { color: var(--text); } .pr-review .stars-s { color: var(--gold); letter-spacing: 1px; }
   .pr-review p { margin: 6px 0 0; font-size: 0.9rem; color: var(--text-dim); }
   @media (max-width: 560px) { .pay-methods { grid-template-columns: 1fr; } }
+  /* carrito */
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .cart-link { position: relative; display: inline-flex; align-items: center; gap: 6px; color: var(--text-on-dark); text-decoration: none; padding: 7px 10px; border: 1px solid rgba(255,255,255,0.28); border-radius: 10px; background: transparent; font-size: 0.85rem; font-weight: 600; }
+  .cart-link:hover { border-color: var(--gold); }
+  .cart-link svg { display: block; }
+  .cart-badge { background: var(--gold); color: #FFFBF3; border-radius: 10px; min-width: 20px; height: 20px; padding: 0 6px; font-size: 0.72rem; line-height: 20px; text-align: center; font-weight: 700; }
+  .cart-page { padding-top: 28px; padding-bottom: 20px; }
+  .cart-title { font-family: var(--serif); font-weight: 600; font-size: 1.7rem; margin: 0 0 16px; }
+  .cart-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .cart-line { display: grid; grid-template-columns: 76px 1fr auto; gap: 14px; align-items: start; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .cart-line:first-child { padding-top: 0; }
+  .cart-thumb { display: block; width: 76px; height: 76px; border-radius: 10px; overflow: hidden; background: var(--surface-tint); }
+  .cart-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cart-name { font-family: var(--serif); font-weight: 600; color: var(--text); text-decoration: none; display: block; line-height: 1.3; }
+  .cart-opt { display: block; font-size: 0.8rem; color: var(--ash); margin: 3px 0 8px; }
+  .cart-qty { display: flex; align-items: center; gap: 12px; }
+  .cart-qty select { padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-family: var(--sans); font-size: 0.9rem; }
+  .cart-del { background: none; border: 0; padding: 0; color: var(--gold); font-family: var(--sans); font-size: 0.82rem; font-weight: 600; cursor: pointer; text-decoration: underline; }
+  .cart-sub { text-align: right; } .cart-sub b { font-family: var(--serif); font-size: 1.05rem; display: block; } .cart-sub span { font-size: 0.78rem; color: var(--ash); }
+  .cart-checkout { position: sticky; top: 90px; }
+  .pay-items { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 6px 0 14px; }
+  .pay-items td { padding: 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; } .pay-items td:last-child { text-align: right; white-space: nowrap; }
+  .pay-items small { color: var(--ash); display: block; }
+  .qty-row { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
+  .qty-row label { font-size: 0.85rem; font-weight: 600; } .qty-row select { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-family: var(--sans); }
+  .rv-pick a { display: block; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; text-decoration: none; color: var(--text); background: #fff; }
+  .rv-pick a:hover { border-color: var(--gold); } .rv-pick small { color: var(--ash); }
+  @media (max-width: 800px) { .cart-grid { grid-template-columns: 1fr; } .cart-checkout { position: static; } .cart-line { grid-template-columns: 64px 1fr; } .cart-thumb { width: 64px; height: 64px; } .cart-sub { grid-column: 2; text-align: left; } }
 </style>

@@ -44,7 +44,7 @@ if ($product) {
 <title><?= $product ? htmlspecialchars($product['title']) . ' | Alquimia Digital Venezuela' : 'Producto no encontrado' ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <?php include __DIR__ . '/venezuela-styles.php'; ?>
 <style>
   .breadcrumb { padding: 16px 0 0; font-size: 0.85rem; color: var(--ash); }
@@ -181,15 +181,15 @@ if ($product) {
       <?php if ($err !== ''): ?><div class="alert err"><?= h($err) ?></div><?php endif; ?>
 
       <?php if ($orderable && $methods): ?>
-      <form class="buy-box" method="post" action="venezuela-pedido.php" id="buy-form">
-        <h3>Haz tu pedido</h3>
+      <form class="buy-box" method="post" action="venezuela-carrito.php" id="buy-form">
+        <h3>Elige tu licencia</h3>
+        <input type="hidden" name="action" value="add">
         <input type="hidden" name="slug" value="<?= h($slug) ?>">
-        <div class="hp"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
         <div class="variant-list" style="margin-bottom:14px">
           <?php $firstOk = true; foreach ($product['variants'] as $v):
             $bsPrice = bs($v['price'], $rate); $off = !$v['avail']; ?>
             <label class="variant-item selectable<?= $off ? ' is-off' : '' ?>">
-              <span class="variant-left"><input type="radio" name="variant_id" value="<?= (int) $v['id'] ?>" required data-usd="<?= h($v['price']) ?>" data-bs="<?= h($bsPrice ?: '') ?>" <?= $off ? 'disabled' : ($firstOk ? 'checked' : '') ?>><span class="variant-name"><?= htmlspecialchars($v['label']) ?></span></span>
+              <span class="variant-left"><input type="radio" name="variant_id" value="<?= (int) $v['id'] ?>" required data-usd="<?= h($v['price']) ?>" data-bsn="<?= (int) ve_bs_amount($v['price'], $rate) ?>" data-max="<?= $v['stock'] !== null ? (int) min(10, $v['stock']) : 10 ?>" <?= $off ? 'disabled' : ($firstOk ? 'checked' : '') ?>><span class="variant-name"><?= htmlspecialchars($v['label']) ?></span></span>
               <span class="variant-price-text">
                 <?php if ($off): ?><span class="variant-price-usd">Agotado</span>
                 <?php else: ?><span class="variant-price-usd"><?= usd($v['price']) ?></span><?php if ($bsPrice): ?><span class="variant-price-bs"><?= htmlspecialchars($bsPrice) ?></span><?php endif; ?><?php endif; ?>
@@ -197,28 +197,23 @@ if ($product) {
             </label>
           <?php if (!$off) $firstOk = false; endforeach; ?>
         </div>
-        <div class="field"><label for="b-name">Tu nombre</label><input id="b-name" type="text" name="name" required maxlength="120" autocomplete="name"></div>
-        <div class="field"><label for="b-email">Correo electrónico</label><input id="b-email" type="email" name="email" required maxlength="190" autocomplete="email"><small>Ahí te enviamos los datos de pago y tu licencia.</small></div>
-        <div class="field"><label for="b-phone">WhatsApp</label><input id="b-phone" type="tel" name="phone" required maxlength="40" autocomplete="tel" placeholder="0412 5859613"><small>Para coordinar la entrega y el soporte.</small></div>
-        <div class="pay-methods">
-          <?php foreach ($methods as $i => $m): ?>
-            <label class="pay-method"><input type="radio" name="method" value="<?= h($m) ?>" <?= $i === 0 ? 'checked' : '' ?>>
-              <span><b><?= $m === 'binance' ? 'Binance Pay (USDT)' : 'PagoMóvil (Bs)' ?></b><span><?= $m === 'binance' ? 'Pagas el monto en dólares' : 'A tasa BCV del día' ?></span></span></label>
-          <?php endforeach; ?>
-        </div>
-        <div class="buy-total"><span>Total a pagar</span><span style="text-align:right"><span class="t-usd" id="t-usd"></span><br><span class="t-bs" id="t-bs"></span></span></div>
-        <button class="btn-buy" type="submit">Hacer pedido</button>
-        <p style="font-size:.76rem;color:var(--ash);text-align:center;margin:10px 0 0">Un producto por pedido. Tienes <?= (int) ve_pay_hours() ?> horas para pagar; si no hay pago ni comprobante, se cancela solo.</p>
+        <div class="qty-row"><label for="b-qty">Cantidad</label>
+          <select id="b-qty" name="qty"><?php for ($i = 1; $i <= 10; $i++): ?><option value="<?= $i ?>"><?= $i ?></option><?php endfor; ?></select></div>
+        <div class="buy-total"><span>Subtotal</span><span style="text-align:right"><span class="t-usd" id="t-usd"></span><br><span class="t-bs" id="t-bs"></span></span></div>
+        <button class="btn-buy" type="submit">🛒 Agregar al carrito</button>
+        <p style="font-size:.76rem;color:var(--ash);text-align:center;margin:10px 0 0">Puedes comprar varios productos en un solo pedido y pagar una sola vez. Pagas por Binance o PagoMóvil; si no hay pago, el pedido se cancela solo en <?= (int) ve_pay_hours() ?> horas.</p>
         <p style="text-align:center;margin:10px 0 0"><a class="btn-sec" target="_blank" href="<?= htmlspecialchars(wa_link('Hola, tengo una duda sobre: ' . $product['title'])) ?>">💬 ¿Dudas? Escríbenos por WhatsApp</a></p>
       </form>
       <script>
         (function () {
-          var f = document.getElementById('buy-form'), tu = document.getElementById('t-usd'), tb = document.getElementById('t-bs');
+          var f = document.getElementById('buy-form'), tu = document.getElementById('t-usd'), tb = document.getElementById('t-bs'), qs = document.getElementById('b-qty');
           function upd() {
             var r = f.querySelector('input[name=variant_id]:checked'); if (!r) { tu.textContent = ''; tb.textContent = ''; return; }
-            var m = f.querySelector('input[name=method]:checked');
-            tu.textContent = '$' + (+r.dataset.usd).toFixed(2) + ' USD';
-            tb.textContent = (m && m.value === 'pagomovil' && r.dataset.bs) ? r.dataset.bs + ' (tasa BCV del momento)' : '';
+            var max = +r.dataset.max || 10, q = Math.min(+qs.value || 1, max);
+            for (var i = 0; i < qs.options.length; i++) qs.options[i].disabled = (i + 1) > max;
+            if ((+qs.value || 1) > max) qs.value = max;
+            tu.textContent = '$' + ((+r.dataset.usd) * q).toFixed(2) + ' USD';
+            tb.textContent = +r.dataset.bsn ? '≈ Bs. ' + ((+r.dataset.bsn) * q).toLocaleString('es-VE') : '';
           }
           f.addEventListener('change', upd); upd();
         })();

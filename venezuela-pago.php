@@ -38,7 +38,7 @@ if ($order && $_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST['website']) 
     if ($err === '') {
         $pdo->prepare('INSERT INTO ve_proofs (order_id, file_name, file_mime, sender, reference, note, created_at) VALUES (:o,:f,:m,:s,:r,:n,NOW())')
             ->execute([':o' => $order['id'], ':f' => $fileName, ':m' => $ext, ':s' => $sender ?: null, ':r' => $ref ?: null, ':n' => $note ?: null]);
-        ve_notify('comprobante', 'Comprobante recibido del pedido ' . $order['order_number'] . ' — ' . $order['product_title'] . ' — ' . ve_order_total_text($order) . ' — ' . $order['name'] . ($ref ? ' — ref. ' . $ref : ''), (int) $order['id']);
+        ve_notify('comprobante', 'Comprobante recibido del pedido ' . $order['order_number'] . ' — ' . ve_items_text(ve_order_items($order)) . ' — ' . ve_order_total_text($order) . ' — ' . $order['name'] . ($ref ? ' — ref. ' . $ref : ''), (int) $order['id']);
         $done = true;
     }
 }
@@ -59,7 +59,7 @@ $ph = $order ? ve_phone_intl($order['phone']) : '';
 <title>Pago de tu pedido | Alquimia Digital Venezuela</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <?php include __DIR__ . '/venezuela-styles.php'; ?>
 </head>
 <body>
@@ -77,8 +77,15 @@ $ph = $order ? ve_phone_intl($order['phone']) : '';
     <span class="<?= $st === 'entregado' ? 'on' : '' ?>">4 · Entrega</span>
   </div>
   <div class="panel">
-    <h1><?= h($order['product_title']) ?></h1>
-    <p class="lead">Pedido <b><?= h($order['order_number']) ?></b> · <?= h($order['variant_title']) ?> · <?= h(ve_method_label($order['method'])) ?></p>
+    <?php $items = ve_order_items($order); ?>
+    <h1><?= count($items) > 1 ? 'Tu pedido' : h($items[0]['product_title']) ?></h1>
+    <p class="lead">Pedido <b><?= h($order['order_number']) ?></b> · <?= h(ve_method_label($order['method'])) ?></p>
+    <table class="pay-items">
+      <?php foreach ($items as $it): ?>
+        <tr><td><?= h($it['product_title']) ?><?php if ($it['variant_title'] !== ''): ?><small><?= h($it['variant_title']) ?><?= (int) $it['qty'] > 1 ? ' · ' . (int) $it['qty'] . ' × $' . h(number_format((float) $it['unit_usd'], 2)) : '' ?></small><?php elseif ((int) $it['qty'] > 1): ?><small><?= (int) $it['qty'] ?> × $<?= h(number_format((float) $it['unit_usd'], 2)) ?></small><?php endif; ?></td>
+          <td>$<?= h(number_format((float) $it['unit_usd'] * (int) $it['qty'], 2)) ?></td></tr>
+      <?php endforeach; ?>
+    </table>
 
     <?php if ($st === 'entregado'): ?>
       <div class="alert ok"><b>¡Pedido entregado!</b> Revisa tu WhatsApp y tu correo (<?= h($order['email']) ?>): ahí está tu licencia con las instrucciones. Si necesitas ayuda para activarla, escríbenos.</div>

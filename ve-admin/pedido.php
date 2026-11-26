@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $proofs = $pdo->prepare('SELECT * FROM ve_proofs WHERE order_id = :i ORDER BY id DESC'); $proofs->execute([':i' => $id]); $proofs = $proofs->fetchAll();
-$rv = $pdo->prepare('SELECT * FROM ve_reviews WHERE order_id = :i'); $rv->execute([':i' => $id]); $rv = $rv->fetch();
+$rv = $pdo->prepare('SELECT * FROM ve_reviews WHERE order_id = :i'); $rv->execute([':i' => $id]); $rv = $rv->fetchAll();
 $pdo->prepare('UPDATE ve_notifications SET is_read = 1 WHERE order_id = :i')->execute([':i' => $id]);
 $ph = ve_phone_intl($o['phone']);
 $st = $o['status'];
@@ -39,7 +39,9 @@ admin_header('Pedido ' . $o['order_number']); flash_show(); ?>
 <p><a href="index.php" class="muted" style="text-decoration:none">← Pedidos</a></p>
 <div class="grid2">
   <div class="box"><h2>Pedido <?= h($o['order_number']) ?> <span class="pill <?= h($st) ?>"><?= h(ucfirst($st)) ?></span></h2>
-    <p><b><?= h($o['product_title']) ?></b> — <?= h($o['variant_title']) ?></p>
+    <table class="t" style="margin:0 0 10px"><tr><th>Producto</th><th>Cant.</th><th>Precio</th></tr>
+      <?php foreach (ve_order_items($o) as $it): ?><tr><td><?= h($it['product_title']) ?><?= $it['variant_title'] !== '' ? '<br><span class="tag">' . h($it['variant_title']) . '</span>' : '' ?></td><td><?= (int) $it['qty'] ?></td><td>$<?= h(number_format((float) $it['unit_usd'] * (int) $it['qty'], 2)) ?></td></tr><?php endforeach; ?>
+    </table>
     <p>Monto: <b><?= h(ve_order_total_text($o)) ?></b><br><span class="tag">Método: <?= h(ve_method_label($o['method'])) ?> · Creado: <?= h(ve_fmt_dt($o['created_at'])) ?><?php if ($st === 'pendiente'): ?> · Vence: <?= h(date('d/m/Y H:i', ve_order_expires_at($o))) ?><?php endif; ?></span></p>
     <?php if ($o['paid_at']): ?><p class="tag">Pagado: <?= h(ve_fmt_dt($o['paid_at'])) ?></p><?php endif; ?>
     <?php if ($o['delivered_at']): ?><p class="tag">Entregado: <?= h(ve_fmt_dt($o['delivered_at'])) ?></p><?php endif; ?>
@@ -49,8 +51,8 @@ admin_header('Pedido ' . $o['order_number']); flash_show(); ?>
     <p class="tag"><a href="<?= h(ve_pay_url($o)) ?>" target="_blank">Página de pago del cliente</a></p></div>
   <div class="box"><h2>Cliente</h2>
     <p><b><?= h($o['name']) ?></b><br><a href="mailto:<?= h($o['email']) ?>"><?= h($o['email']) ?></a><br><?= h($o['phone']) ?>
-    <?php if ($ph): ?> · <a target="_blank" href="https://wa.me/<?= h($ph) ?>?text=<?= rawurlencode('Hola ' . $o['name'] . ', te escribo por tu pedido ' . $o['order_number'] . ' (' . $o['product_title'] . ').') ?>">💬 WhatsApp</a><?php endif; ?></p>
-    <?php if ($rv): ?><p class="tag">Reseña: <?= str_repeat('★', (int) $rv['rating']) ?> — <?= $rv['published'] ? 'publicada' : 'pendiente' ?> (<a href="resenas.php">ver</a>)</p><?php endif; ?></div>
+    <?php if ($ph): ?> · <a target="_blank" href="https://wa.me/<?= h($ph) ?>?text=<?= rawurlencode('Hola ' . $o['name'] . ', te escribo por tu pedido ' . $o['order_number'] . ' (' . ve_items_text(ve_order_items($o)) . ').') ?>">💬 WhatsApp</a><?php endif; ?></p>
+    <?php foreach ($rv as $r1): ?><p class="tag">Reseña (<?= h(ve_clean_text($r1['product_title'])) ?>): <?= str_repeat('★', (int) $r1['rating']) ?> — <?= $r1['published'] ? 'publicada' : 'pendiente' ?> (<a href="resenas.php">ver</a>)</p><?php endforeach; ?></div>
 </div>
 
 <div class="box"><h2>Comprobantes (<?= count($proofs) ?>)</h2>

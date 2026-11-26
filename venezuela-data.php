@@ -310,3 +310,25 @@ function ve_render_card(array $p, float $rate, bool $filterable = true): void {
     </a>
     <?php
 }
+
+/* ───────────── Carrito: líneas validadas contra el catálogo (precio y stock reales) ───────────── */
+/** @return array{lines: array, total: float} */
+function ve_cart_lines(): array {
+    $cart = ve_cart_raw(); $lines = []; $total = 0.0;
+    if (!$cart || !ve_db_ready()) return ['lines' => [], 'total' => 0.0];
+    $found = [];
+    foreach (ve_catalog() as $slug => $p) {
+        if (empty($p['pid']) || $p['soldout']) continue;
+        foreach ($p['variants'] as $v) if ($v['id'] !== null && isset($cart[(int) $v['id']]) && $v['avail']) $found[(int) $v['id']] = [$slug, $p, $v];
+    }
+    foreach ($cart as $vid => $qty) {
+        if (!isset($found[$vid])) continue;
+        [$slug, $p, $v] = $found[$vid];
+        $max = $v['stock'] !== null ? max(1, min(10, (int) $v['stock'])) : 10;
+        $qty = min($qty, $max);
+        $sub = round($v['price'] * $qty, 2); $total += $sub;
+        $lines[] = ['vid' => $vid, 'qty' => $qty, 'max' => $max, 'slug' => $slug, 'pid' => (int) $p['pid'], 'title' => $p['title'], 'image' => product_image_path($p),
+                    'brand_logo' => $p['brand_logo'], 'label' => $v['label'], 'unit' => (float) $v['price'], 'sub' => $sub, 'stock' => $v['stock']];
+    }
+    return ['lines' => $lines, 'total' => round($total, 2)];
+}
