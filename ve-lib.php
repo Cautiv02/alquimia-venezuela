@@ -68,7 +68,7 @@ function ve_db_ready(): bool {
 
 function ve_ensure_schema(PDO $pdo): void {
     $marker = __DIR__ . '/ve-schema.ok';
-    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '4') return;
+    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '5') return;
     $t = ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_settings (k VARCHAR(60) NOT NULL PRIMARY KEY, v TEXT NOT NULL)$t");
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_products (
@@ -106,7 +106,17 @@ function ve_ensure_schema(PDO $pdo): void {
     try { $pdo->exec('ALTER TABLE ve_reviews DROP INDEX uq_order'); } catch (Throwable $e) { /* ya no existe */ }
     try { $pdo->exec('ALTER TABLE ve_reviews ADD UNIQUE KEY uq_order_prod (order_id, product_id)'); } catch (Throwable $e) { /* ya existe */ }
     try { $pdo->exec('ALTER TABLE ve_products ADD COLUMN image VARCHAR(200) NULL'); } catch (Throwable $e) { /* ya existe */ }
-    @file_put_contents($marker, '4');
+    // Secciones de la portada
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ve_sections (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, title VARCHAR(120) NOT NULL, note TEXT NULL,
+        sort_order INT NOT NULL DEFAULT 100, active TINYINT(1) NOT NULL DEFAULT 1)$t");
+    try { $pdo->exec('ALTER TABLE ve_products ADD COLUMN section_id INT UNSIGNED NULL'); } catch (Throwable $e) { /* ya existe */ }
+    if (!(int) $pdo->query('SELECT COUNT(*) FROM ve_sections')->fetchColumn()) {
+        $pdo->prepare('INSERT INTO ve_sections (title, note, sort_order, active) VALUES (:t,:n,10,1)')
+            ->execute([':t' => 'Ofertas Flash', ':n' => "Paga en dólares (USDT) o en bolívares (PagoMóvil) a la tasa BCV del día.\nLos precios indicados en bolívares están actualizados en tiempo real."]);
+        $pdo->exec('UPDATE ve_products SET section_id = ' . (int) $pdo->lastInsertId() . ' WHERE section_id IS NULL');
+    }
+    @file_put_contents($marker, '5');
 }
 
 /* ───────────── Ajustes (editables en el panel) ───────────── */
@@ -209,6 +219,13 @@ function ve_notify(string $type, string $message, ?int $orderId = null, bool $em
             ve_send_mail($addr, '[Venezuela] ' . $message, ve_mail_html('<p>' . h($message) . '</p>' . $link));
         }
     }
+}
+
+/* ───────────── Secciones de la portada ───────────── */
+/** Secciones en su orden. $onlyActive = false para el panel. */
+function ve_sections(bool $onlyActive = true): array {
+    try { return ve_pdo()->query('SELECT * FROM ve_sections' . ($onlyActive ? ' WHERE active = 1' : '') . ' ORDER BY sort_order, id')->fetchAll(); }
+    catch (Throwable $e) { return []; }
 }
 
 /* ───────────── Carrito (cookie con opción:cantidad; los precios SIEMPRE se leen de la base) ───────────── */

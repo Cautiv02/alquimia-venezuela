@@ -30,9 +30,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dup = $pdo->prepare('SELECT product_id FROM ve_products WHERE slug = :s AND product_id <> :p'); $dup->execute([':s' => $slug, ':p' => $pid]);
         if ($dup->fetchColumn()) { flash_set('Esa dirección (slug) ya la usa otro producto. Elige otra.', true); header('Location: productos.php?id=' . $pid); exit; }
         $title = trim(mb_substr((string) ($_POST['title'] ?? ''), 0, 255));
-        $pdo->prepare('INSERT INTO ve_products (product_id, slug, title, active, sort_order) VALUES (:p,:s,:t,:a,:o)
-            ON DUPLICATE KEY UPDATE slug = VALUES(slug), title = VALUES(title), active = VALUES(active), sort_order = VALUES(sort_order)')
-            ->execute([':p' => $pid, ':s' => $slug, ':t' => $title !== '' ? $title : null, ':a' => !empty($_POST['active']) ? 1 : 0, ':o' => (int) ($_POST['sort_order'] ?? 100)]);
+        $secIds = array_map('intval', array_column(ve_sections(false), 'id')); $secId = (int) ($_POST['section_id'] ?? 0);
+        if (!in_array($secId, $secIds, true)) $secId = $secIds[0] ?? null;
+        $pdo->prepare('INSERT INTO ve_products (product_id, slug, title, active, sort_order, section_id) VALUES (:p,:s,:t,:a,:o,:sec)
+            ON DUPLICATE KEY UPDATE slug = VALUES(slug), title = VALUES(title), active = VALUES(active), sort_order = VALUES(sort_order), section_id = VALUES(section_id)')
+            ->execute([':p' => $pid, ':s' => $slug, ':t' => $title !== '' ? $title : null, ':a' => !empty($_POST['active']) ? 1 : 0, ':o' => (int) ($_POST['sort_order'] ?? 100), ':sec' => $secId]);
         $img = trim((string) ($_POST['image_pick'] ?? ''));
         $dirImg = dirname(__DIR__) . '/imagenes/productos';
         if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
@@ -98,6 +100,7 @@ if ($id) {
       <div class="grid2">
         <div class="field"><label>Dirección (slug)</label><input type="text" name="slug" value="<?= h($vp['slug']) ?>"><small>Úsala igual a la de los 10 originales (ej. <code>office-2021-ltsc</code>) para conservar sus textos y requisitos.</small></div>
         <div class="field"><label>Nombre en la tienda de Venezuela (opcional)</label><input type="text" name="title" value="<?= h($vp['title']) ?>" placeholder="<?= h(ve_clean_text($p['title'])) ?>"></div>
+        <div class="field"><label>Sección de la portada</label><select name="section_id"><?php foreach (ve_sections(false) as $sc): ?><option value="<?= (int) $sc['id'] ?>" <?= (int) ($vp['section_id'] ?? 0) === (int) $sc['id'] ? 'selected' : '' ?>><?= h($sc['title']) ?></option><?php endforeach; ?></select><small>El orden y las secciones se arreglan más fácil en <a href="portada.php">Portada</a>.</small></div>
         <div class="field"><label>Orden (menor = primero)</label><input type="number" name="sort_order" value="<?= (int) $vp['sort_order'] ?>"></div>
         <div class="field"><label>&nbsp;</label><label><input type="checkbox" name="active" value="1" <?= $vp['active'] ? 'checked' : '' ?>> Mostrar en la tienda de Venezuela</label></div>
       </div>

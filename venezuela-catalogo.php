@@ -63,15 +63,24 @@ foreach ($facetOpts as &$fo) { arsort($fo); } unset($fo);
   </div>
 </div>
 
-<section class="section" id="catalogo">
+<?php
+// Portada por secciones: cada producto va a su sección; los que no tienen (o cuya sección ya no existe) caen en la primera
+$secs = ve_db_ready() ? ve_sections() : [];
+if (!$secs) $secs = [['id' => 0, 'title' => 'Ofertas Flash', 'note' => "Paga en dólares (USDT) o en bolívares (PagoMóvil) a la tasa BCV del día.\nLos precios indicados en bolívares están actualizados en tiempo real."]];
+$secIds = array_map('intval', array_column($secs, 'id')); $firstSec = $secIds[0];
+$bySec = array_fill_keys($secIds, []);
+foreach ($catalog as $slug => $p) { $ps = (int) ($p['section'] ?? 0); $sid = in_array($ps, $secIds, true) ? $ps : ($ps ? null : $firstSec); if ($sid !== null) $bySec[$sid][$slug] = $p; }
+foreach ($secs as $si => $sec):
+  $items = $bySec[(int) $sec['id']];
+  if (!$items && $si > 0) continue; ?>
+<section class="section" id="<?= $si === 0 ? 'catalogo' : 'seccion-' . (int) $sec['id'] ?>">
   <div class="wrap">
     <div class="section-head">
-      <h2 class="section-title">Ofertas Flash</h2>
-      <p class="section-note">Paga en dólares (USDT) o en bolívares (PagoMóvil) a la tasa BCV del día.</p>
-      <p class="section-note">Los precios indicados en bolívares están actualizados en tiempo real.</p>
+      <h2 class="section-title"><?= h($sec['title']) ?></h2>
+      <?php foreach (preg_split('/\R+/', trim((string) $sec['note'])) as $ln): if (trim($ln) === '') continue; ?><p class="section-note"><?= h($ln) ?></p><?php endforeach; ?>
     </div>
     <?php $showSearch = false; /* poner en true cuando el catálogo crezca: activa buscador y filtros */ ?>
-    <?php if ($showSearch && count($catalog) > 1): ?>
+    <?php if ($si === 0 && $showSearch && count($catalog) > 1): ?>
     <div class="ve-tools">
       <div class="ve-search">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
@@ -88,13 +97,14 @@ foreach ($facetOpts as &$fo) { arsort($fo); } unset($fo);
       <div class="ve-count" id="ve-count"></div>
     </div>
     <?php endif; ?>
-    <div class="products" id="ve-grid">
-      <?php foreach ($catalog as $slug => $p) ve_render_card($p, $rate); ?>
-      <p class="ve-empty" id="ve-empty">No encontramos productos con esa búsqueda. Prueba otra palabra o escríbenos por WhatsApp.</p>
+    <div class="products"<?= $si === 0 ? ' id="ve-grid"' : '' ?>>
+      <?php foreach ($items as $slug => $p) ve_render_card($p, $rate); ?>
+      <?php if ($si === 0): ?><p class="ve-empty" id="ve-empty">No encontramos productos con esa búsqueda. Prueba otra palabra o escríbenos por WhatsApp.</p><?php endif; ?>
     </div>
-    <?php if (!$catalog): ?><p class="section-note" style="text-align:center">Estamos actualizando el catálogo. Escríbenos por WhatsApp y te atendemos de inmediato.</p><?php endif; ?>
+    <?php if (!$catalog && $si === 0): ?><p class="section-note" style="text-align:center">Estamos actualizando el catálogo. Escríbenos por WhatsApp y te atendemos de inmediato.</p><?php endif; ?>
   </div>
 </section>
+<?php endforeach; ?>
 
 <section class="section on-paper" id="como-comprar">
   <div class="wrap">
