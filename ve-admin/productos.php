@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $secIds = array_map('intval', array_column(ve_sections(false), 'id')); $secId = (int) ($_POST['section_id'] ?? 0);
         if (!in_array($secId, $secIds, true)) $secId = $secIds[0] ?? null;
         $sd = trim(mb_substr(preg_replace('/\s+/u', ' ', (string) ($_POST['short_desc'] ?? '')), 0, 300));
-        $ld = trim(mb_substr(str_replace("\r", '', (string) ($_POST['long_desc'] ?? '')), 0, 6000));
+        $ld = ve_clean_html(mb_substr((string) ($_POST['long_desc'] ?? ''), 0, 20000));
         $pdo->prepare('INSERT INTO ve_products (product_id, slug, title, active, sort_order, section_id, short_desc, long_desc) VALUES (:p,:s,:t,:a,:o,:sec,:sd,:ld)
             ON DUPLICATE KEY UPDATE slug = VALUES(slug), title = VALUES(title), active = VALUES(active), sort_order = VALUES(sort_order), section_id = VALUES(section_id), short_desc = VALUES(short_desc), long_desc = VALUES(long_desc)')
             ->execute([':p' => $pid, ':s' => $slug, ':t' => $title !== '' ? $title : null, ':a' => !empty($_POST['active']) ? 1 : 0, ':o' => (int) ($_POST['sort_order'] ?? 100), ':sec' => $secId,
@@ -108,8 +108,60 @@ if ($id) {
         <div class="field"><label>&nbsp;</label><label><input type="checkbox" name="active" value="1" <?= $vp['active'] ? 'checked' : '' ?>> Mostrar en la tienda de Venezuela</label></div>
       </div>
       <div class="field"><label>Descripción corta (tarjeta de la portada y encabezado de la ficha)</label><input type="text" name="short_desc" maxlength="300" value="<?= h($vp['short_desc'] ?? '') ?>" placeholder="Ej.: Licencia permanente para 1 PC, activación online."></div>
-      <div class="field"><label>Descripción completa (pestaña «Descripción»)</label><textarea name="long_desc" rows="8" maxlength="6000" placeholder="Escribe el texto para Venezuela. Deja una línea en blanco entre párrafos."><?= h($vp['long_desc'] ?? '') ?></textarea>
-        <small>Si lo dejas vacío se usa el texto de la tienda de Chile (o el de los 10 originales).</small></div>
+      <div class="field"><label>Descripción completa (pestaña «Descripción»)</label>
+        <div class="ed">
+          <div class="ed-bar">
+            <button type="button" data-c="bold" title="Negrita"><b>N</b></button><button type="button" data-c="italic" title="Cursiva"><i>K</i></button><button type="button" data-c="underline" title="Subrayado"><u>S</u></button>
+            <span class="sep"></span><button type="button" data-b="h3" title="Título">Título</button><button type="button" data-b="h4" title="Subtítulo">Subtítulo</button><button type="button" data-b="p" title="Párrafo normal">Párrafo</button>
+            <span class="sep"></span><button type="button" data-c="insertUnorderedList" title="Lista con viñetas">• Lista</button><button type="button" data-c="insertOrderedList" title="Lista numerada">1. Lista</button>
+            <span class="sep"></span><button type="button" data-link="1" title="Enlace">Enlace</button><button type="button" data-c="removeFormat" title="Quitar formato">Limpiar</button>
+            <button type="button" id="ed-src" class="src" title="Ver o editar el código HTML">&lt;/&gt; HTML</button>
+          </div>
+          <div id="ed-vis" class="ed-area" contenteditable="true" spellcheck="true"></div>
+          <textarea id="ed-code" class="ed-code" rows="12" style="display:none" spellcheck="false"></textarea>
+          <textarea name="long_desc" id="ed-val" style="display:none"><?= h($vp['long_desc'] ?? '') ?></textarea>
+        </div>
+        <small>Si lo dejas vacío se usa el texto de la tienda de Chile (o el de los 10 originales). Se permite: negrita, cursiva, títulos, listas y enlaces.</small></div>
+      <style>
+        .ed { border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow: hidden; }
+        .ed-bar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 6px; background: var(--surface-tint); border-bottom: 1px solid var(--line); }
+        .ed-bar button { border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-family: var(--sans); font-size: .8rem; }
+        .ed-bar button:hover { border-color: var(--gold); } .ed-bar button.on { background: var(--gold); color: #fff; border-color: var(--gold); }
+        .ed-bar .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; } .ed-bar .src { margin-left: auto; }
+        .ed-area { min-height: 220px; max-height: 520px; overflow: auto; padding: 14px 16px; font-size: .95rem; line-height: 1.6; outline: none; }
+        .ed-area p { margin: 0 0 10px; } .ed-area h3, .ed-area h4 { font-family: var(--serif); margin: 14px 0 6px; } .ed-area ul, .ed-area ol { margin: 0 0 10px; padding-left: 22px; } .ed-area a { color: var(--gold); }
+        .ed-code { width: 100%; border: 0; padding: 12px 14px; font-family: ui-monospace, Consolas, monospace; font-size: .82rem; box-sizing: border-box; }
+      </style>
+      <script>
+      (function () {
+        var vis = document.getElementById('ed-vis'), code = document.getElementById('ed-code'), val = document.getElementById('ed-val'), srcBtn = document.getElementById('ed-src'), src = false;
+        function plainToHtml(t) { if (t.trim() === '' || /<[a-z][\s\S]*>/i.test(t)) return t; return t.split(/\n{2,}/).map(function (x) { return '<p>' + x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p>'; }).join(''); }
+        vis.innerHTML = plainToHtml(val.value);
+        try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) {}
+        function sync() { val.value = src ? code.value : vis.innerHTML; }
+        document.querySelector('.ed-bar').addEventListener('mousedown', function (e) { if (e.target.closest('button') && e.target.id !== 'ed-src') e.preventDefault(); });
+        document.querySelector('.ed-bar').addEventListener('click', function (e) {
+          var b = e.target.closest('button'); if (!b || src && b.id !== 'ed-src') return;
+          if (b.id === 'ed-src') {
+            src = !src; b.classList.toggle('on', src);
+            if (src) { code.value = vis.innerHTML.replace(/></g, '>\n<'); vis.style.display = 'none'; code.style.display = 'block'; }
+            else { vis.innerHTML = code.value; code.style.display = 'none'; vis.style.display = 'block'; }
+            sync(); return;
+          }
+          vis.focus();
+          if (b.dataset.c) document.execCommand(b.dataset.c, false, null);
+          else if (b.dataset.b) document.execCommand('formatBlock', false, b.dataset.b);
+          else if (b.dataset.link) { var u = prompt('Dirección del enlace (https://…):', 'https://'); if (u && /^(https?:\/\/|mailto:|tel:)/i.test(u)) document.execCommand('createLink', false, u); }
+          sync();
+        });
+        vis.addEventListener('input', sync); code.addEventListener('input', sync);
+        vis.addEventListener('paste', function (e) {  // pegar como texto limpio (sin estilos de Word o webs)
+          e.preventDefault(); var t = (e.clipboardData || window.clipboardData).getData('text/plain');
+          document.execCommand('insertHTML', false, plainToHtml(t.replace(/\r/g, '')));
+        });
+        vis.closest('form').addEventListener('submit', sync);
+      })();
+      </script>
       <?php $chileTxt = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags((string) $p['description_html'])))); if ($chileTxt !== ''): ?><details style="margin:0 0 14px"><summary class="tag" style="cursor:pointer">Ver la descripción de Chile (solo referencia)</summary><p class="tag" style="margin:8px 0 0;white-space:normal"><?= h(mb_substr($chileTxt, 0, 1500)) ?></p></details><?php endif; ?>
       <?php $imgs = array_map('basename', glob(dirname(__DIR__) . '/imagenes/productos/*.{jpg,jpeg,png,webp}', GLOB_BRACE) ?: []); sort($imgs); $curImg = (string) ($vp['image'] ?? ''); ?>
       <div class="grid2">

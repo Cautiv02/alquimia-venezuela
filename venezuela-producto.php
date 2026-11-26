@@ -123,6 +123,7 @@ if ($product) {
   .faq-toggle { transition: transform 0.15s ease; font-size: 1.1rem; color: var(--gold); }
 
   /* relacionados */
+  .rich p { margin: 0 0 12px; } .rich ul, .rich ol { margin: 0 0 12px; padding-left: 22px; } .rich li { margin: 0 0 4px; } .rich h3, .rich h4 { font-family: var(--serif); font-weight: 600; margin: 18px 0 8px; } .rich a { color: var(--gold); } .rich blockquote { margin: 0 0 12px; padding: 4px 14px; border-left: 3px solid var(--gold); color: var(--text-dim); }
   .related-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
   .not-found { padding: 60px 24px; text-align: center; }
@@ -255,7 +256,8 @@ if ($product) {
       </div>
 
       <div class="info-panel active" id="tab-desc">
-        <?php if ($product['long_desc'] !== ''): ?><?php foreach (preg_split('/\R{2,}/', trim($product['long_desc'])) as $para): ?><p><?= nl2br(htmlspecialchars(trim($para))) ?></p><?php endforeach; ?>
+        <?php if (!empty($product['long_html'])): ?><div class="rich"><?= $product['long_html'] ?></div>
+        <?php elseif ($product['long_desc'] !== ''): ?><p><?= htmlspecialchars($product['long_desc']) ?></p>
         <?php elseif (trim($product['desc_html'] ?? '') !== ''): ?><?= $product['desc_html'] ?>
         <?php else: ?><p>Licencia original con entrega digital y soporte por WhatsApp.</p><?php endif; ?>
 

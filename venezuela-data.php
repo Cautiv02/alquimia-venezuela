@@ -281,7 +281,10 @@ function ve_catalog(): array {
         // Descripciones propias de Venezuela (editadas en el panel): mandan sobre las de Chile y las de los 10 originales
         $vs = trim((string) $r['short_desc']); $vl = trim((string) $r['vlong']);
         if ($vs !== '') { $p['desc'] = $vs; $p['lead'] = $vs; }
-        if ($vl !== '') { $p['long_desc'] = $vl; if ($vs === '') { $p['lead'] = mb_strlen(strtok($vl, "\n")) > 240 ? mb_substr(strtok($vl, "\n"), 0, 237) . '…' : (string) strtok($vl, "\n"); } }
+        if ($vl !== '') {
+            $p['long_html'] = ve_clean_html($vl); $p['long_desc'] = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(str_replace(['</p>', '<br>', '<br/>', '</li>'], ' ', $p['long_html'])))));
+            if ($vs === '') $p['lead'] = mb_strlen($p['long_desc']) > 240 ? mb_substr($p['long_desc'], 0, 237) . '…' : $p['long_desc'];
+        }
         if (!empty($r['vimage']) && is_file(__DIR__ . '/' . $r['vimage'])) $p['image'] = $r['vimage'];  // foto propia elegida en el panel
         if (!array_filter(array_column($p['variants'], 'avail'))) $p['soldout'] = true;
         $out[$r['slug']] = $p;

@@ -222,6 +222,48 @@ function ve_notify(string $type, string $message, ?int $orderId = null, bool $em
     }
 }
 
+/* ───────────── HTML de descripciones (lista blanca: lo que escribes en el editor del panel) ───────────── */
+function ve_clean_html(string $html): string {
+    $html = trim($html); if ($html === '') return '';
+    if (!preg_match('#</?[a-z][^>]*>#i', $html)) {  // texto plano: párrafos por línea en blanco
+        $out = ''; foreach (preg_split('/\R{2,}/', $html) as $para) if (trim($para) !== '') $out .= '<p>' . nl2br(h(trim($para))) . '</p>';
+        return $out;
+    }
+    $allowed = ['p' => 1, 'br' => 1, 'strong' => 1, 'b' => 1, 'em' => 1, 'i' => 1, 'u' => 1, 'ul' => 1, 'ol' => 1, 'li' => 1, 'h3' => 1, 'h4' => 1, 'a' => 1, 'blockquote' => 1];
+    $drop = ['script' => 1, 'style' => 1, 'iframe' => 1, 'object' => 1, 'embed' => 1, 'form' => 1, 'svg' => 1, 'math' => 1, 'noscript' => 1, 'template' => 1];
+    $prev = libxml_use_internal_errors(true);
+    $doc = new DOMDocument('1.0', 'UTF-8');
+    $doc->loadHTML('<?xml encoding="utf-8" ?><body>' . $html . '</body>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors(); libxml_use_internal_errors($prev);
+    $walk = function (DOMNode $node) use (&$walk, $allowed, $drop, $doc) {
+        foreach (iterator_to_array($node->childNodes) as $c) {
+            if ($c->nodeType === XML_COMMENT_NODE || $c->nodeType === XML_PI_NODE) { $node->removeChild($c); continue; }
+            if ($c->nodeType !== XML_ELEMENT_NODE) continue;
+            $tag = strtolower($c->nodeName);
+            if (isset($drop[$tag])) { $node->removeChild($c); continue; }
+            $walk($c);
+            if ($tag === 'div' || $tag === 'span' || $tag === 'section') {  // los divs del editor son párrafos; el resto se desenvuelve
+                if ($tag === 'div') { $np = $doc->createElement('p'); while ($c->firstChild) $np->appendChild($c->firstChild); $node->replaceChild($np, $c); }
+                else { while ($c->firstChild) $node->insertBefore($c->firstChild, $c); $node->removeChild($c); }
+                continue;
+            }
+            if (!isset($allowed[$tag])) { while ($c->firstChild) $node->insertBefore($c->firstChild, $c); $node->removeChild($c); continue; }
+            $href = $tag === 'a' ? trim($c->getAttribute('href')) : '';
+            foreach (iterator_to_array($c->attributes) as $a) $c->removeAttribute($a->nodeName);
+            if ($tag === 'a') {
+                if (preg_match('#^(https?://|mailto:|tel:)#i', $href)) { $c->setAttribute('href', $href); $c->setAttribute('target', '_blank'); $c->setAttribute('rel', 'noopener nofollow'); }
+                else { while ($c->firstChild) $node->insertBefore($c->firstChild, $c); $node->removeChild($c); }
+            }
+        }
+    };
+    $body = $doc->getElementsByTagName('body')->item(0); if (!$body) return '';
+    $walk($body);
+    $out = ''; foreach ($body->childNodes as $c) $out .= $doc->saveHTML($c);
+    // texto suelto de primer nivel → párrafo; se descartan párrafos vacíos
+    $out = preg_replace('#<p>(\s|&nbsp;|\x{00A0}|<br\s*/?>)*</p>#iu', '', $out);
+    return trim($out);
+}
+
 /* ───────────── Secciones de la portada ───────────── */
 /** Secciones en su orden. $onlyActive = false para el panel. */
 function ve_sections(bool $onlyActive = true): array {
