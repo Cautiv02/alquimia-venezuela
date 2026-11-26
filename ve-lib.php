@@ -68,7 +68,7 @@ function ve_db_ready(): bool {
 
 function ve_ensure_schema(PDO $pdo): void {
     $marker = __DIR__ . '/ve-schema.ok';
-    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '7') return;
+    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '8') return;
     $t = ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_settings (k VARCHAR(60) NOT NULL PRIMARY KEY, v TEXT NOT NULL)$t");
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_products (
@@ -117,7 +117,8 @@ function ve_ensure_schema(PDO $pdo): void {
         $pdo->exec('UPDATE ve_products SET section_id = ' . (int) $pdo->lastInsertId() . ' WHERE section_id IS NULL');
     }
     foreach (['short_desc VARCHAR(300) NULL', 'long_desc TEXT NULL', 'extras TEXT NULL'] as $col) { try { $pdo->exec('ALTER TABLE ve_products ADD COLUMN ' . $col); } catch (Throwable $e) { /* ya existe */ } }
-    @file_put_contents($marker, '7');
+    ve_stats_ensure_table($pdo);
+    @file_put_contents($marker, '8');
 }
 
 /* ───────────── Ajustes (editables en el panel) ───────────── */
@@ -342,6 +343,46 @@ function ve_box_icon(string $n, int $size = 18): string {
           'chat' => '<path d="M4 5h16v11H9l-5 4z"/>', 'lock' => '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
           'book' => '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>'][$n] ?? '<circle cx="12" cy="12" r="9"/>';
     return '<svg width="' . $size . '" height="' . $size . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $p . '</svg>';
+}
+
+/* ───────────── Estadísticas de visitas (propias, anónimas: sin IP ni datos personales) ───────────── */
+function ve_stats_ensure_table(PDO $pdo): void {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ve_events (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, created_at DATETIME NOT NULL, vid CHAR(16) NOT NULL, ev VARCHAR(20) NOT NULL,
+        page VARCHAR(30) NOT NULL, product_id INT UNSIGNED NULL, source VARCHAR(40) NOT NULL DEFAULT 'directo', device VARCHAR(12) NOT NULL DEFAULT '',
+        KEY (created_at), KEY (ev, created_at), KEY (vid)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+function ve_stats_source(): string {
+    $utm = isset($_GET['utm_source']) ? strtolower(trim((string) $_GET['utm_source'])) : '';
+    if ($utm !== '') return mb_substr(preg_replace('/[^a-z0-9._ -]/', '', $utm), 0, 40) ?: 'campaña';
+    $ref = (string) ($_SERVER['HTTP_REFERER'] ?? ''); if ($ref === '') return 'directo';
+    $host = strtolower((string) parse_url($ref, PHP_URL_HOST)); if ($host === '') return 'directo';
+    if ($host === strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''))) return 'interno';
+    foreach (['google' => 'google', 'bing' => 'bing', 'instagram' => 'instagram', 'facebook' => 'facebook', 'fb.com' => 'facebook', 'whatsapp' => 'whatsapp', 'youtube' => 'youtube',
+              'tiktok' => 'tiktok', 't.co' => 'twitter', 'twitter' => 'twitter', 'duckduckgo' => 'duckduckgo', 'yahoo' => 'yahoo', 'alquimia-digital' => 'tienda de Chile'] as $needle => $name)
+        if (strpos($host, $needle) !== false) return $name;
+    return mb_substr(preg_replace('/^www\./', '', $host), 0, 40);
+}
+/** Registra una visita o un evento (view, cart_add). Nunca rompe la página. $page: catalogo, producto, carrito, pago… */
+function ve_track(string $ev = 'view', ?int $productId = null, string $page = ''): void {
+    try {
+        if (PHP_SAPI === 'cli' || !ve_db_ready()) return;
+        $ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+        if ($ua === '' || preg_match('/bot|crawl|spider|slurp|preview|monitor|curl|wget|python|headless|facebookexternalhit|lighthouse|uptime/i', $ua)) return;
+        if (isset($_COOKIE['ve_staff'])) return; // no contar tus propias visitas desde el panel
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET' && $ev === 'view') return;
+        $vid = (string) ($_COOKIE['ve_v'] ?? '');
+        if (!preg_match('/^[a-f0-9]{16}$/', $vid)) {
+            $vid = bin2hex(random_bytes(8));
+            if (!headers_sent()) setcookie('ve_v', $vid, ['expires' => time() + 86400 * 365, 'path' => rtrim((string) (parse_url(ve_site_url(), PHP_URL_PATH) ?: ''), '/') . '/', 'samesite' => 'Lax', 'secure' => strpos(ve_site_url(), 'https://') === 0, 'httponly' => true]);
+        }
+        $device = preg_match('/ipad|tablet/i', $ua) ? 'tablet' : (preg_match('/mobi|android|iphone/i', $ua) ? 'móvil' : 'escritorio');
+        $pdo = ve_pdo();
+        $ins = 'INSERT INTO ve_events (created_at, vid, ev, page, product_id, source, device) VALUES (NOW(), :v, :e, :p, :pid, :s, :d)';
+        $args = [':v' => $vid, ':e' => $ev, ':p' => mb_substr($page !== '' ? $page : 'otra', 0, 30), ':pid' => $productId, ':s' => ve_stats_source(), ':d' => $device];
+        try { $pdo->prepare($ins)->execute($args); }
+        catch (PDOException $e) { ve_stats_ensure_table($pdo); $pdo->prepare($ins)->execute($args); }
+    } catch (Throwable $e) { /* las estadísticas nunca deben afectar la tienda */ }
 }
 
 /* ───────────── Secciones de la portada ───────────── */

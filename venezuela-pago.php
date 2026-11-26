@@ -43,6 +43,7 @@ if ($order && $_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST['website']) 
     }
 }
 if ($order) $order = ve_order_by_id((int) $order['id']);
+if ($order) ve_track('view', null, 'pago');
 $hasProof = $order ? ve_order_has_proof((int) $order['id']) : false;
 $rate = $order ? (float) $order['rate'] : 0;
 $expires = $order ? ve_order_expires_at($order) : 0;

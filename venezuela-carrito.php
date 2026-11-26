@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$v['avail']) { header('Location: ' . $back . urlencode('Esa opción está agotada.') . '#buy-form'); exit; }
         $max = $v['stock'] !== null ? min(10, (int) $v['stock']) : 10;
         $cart[$vid] = min($max, ($cart[$vid] ?? 0) + $qty);
+        ve_track('cart_add', (int) $p['pid'], 'producto');
         ve_cart_save($cart);
         header('Location: venezuela-carrito.php?agregado=1'); exit;
     }
@@ -35,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $ready = ve_db_ready();
+ve_track('view', null, 'carrito');
 $rate = get_bcv_rate();
 $c = $ready ? ve_cart_lines() : ['lines' => [], 'total' => 0.0];
 $lines = $c['lines']; $total = $c['total'];

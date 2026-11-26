@@ -16,6 +16,7 @@ ve_maintenance_lazy();
 $slug = (string) ($_GET['slug'] ?? '');
 $catalog = ve_catalog();
 $product = $catalog[$slug] ?? null;
+if ($product && $product['pid']) ve_track('view', (int) $product['pid'], 'producto');
 $rate = get_bcv_rate();
 $orderable = $product && $product['pid'] && ve_db_ready() && !$product['soldout'];
 $methods = [];

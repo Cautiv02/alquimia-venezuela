@@ -4,4 +4,5 @@ require_once __DIR__ . '/_boot.php';
 if (!ve_configured() || VE_ADMIN_PASS_HASH === '') { header('Location: instalar.php'); exit; }
 if (!ve_db_ready()) { http_response_code(500); exit('No se pudo conectar a la base de datos. Revisa config-ve.php o ejecuta de nuevo el instalador (borrando antes config-ve.php).'); }
 if (empty($_SESSION['ve_ok'])) { header('Location: login.php'); exit; }
+if (!isset($_COOKIE['ve_staff']) && !headers_sent()) setcookie('ve_staff', '1', ['expires' => time() + 86400 * 90, 'path' => '/', 'samesite' => 'Lax', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true]);
 ve_maintenance_lazy();

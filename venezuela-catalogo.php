@@ -12,6 +12,7 @@ require_once __DIR__ . '/venezuela-data.php'; // productos + funciones compartid
 ve_maintenance_lazy();          // recordatorios y cancelación automática de pedidos sin pagar (cada 5 min como máximo)
 $rate = get_bcv_rate();
 $catalog = ve_catalog();
+ve_track('view', null, 'catalogo');
 // Datos para el buscador con sugerencias y para los filtros
 $suggest = []; $facetOpts = ['brand' => [], 'cat' => [], 'dur' => []];
 foreach ($catalog as $slug => $p) {
