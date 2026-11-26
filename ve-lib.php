@@ -132,6 +132,8 @@ function ve_setting_defaults(): array {
         'pagomovil_enabled'=> '0', 'pagomovil_details' => '',
         'pagomovil_note'   => 'Haz el PagoMóvil por el monto exacto en bolívares y sube aquí tu comprobante (captura) con la referencia.',
         'expiry_last_run'  => '',
+        'support_email'    => 'info@digital-alquimia.com',  // el soporte técnico es por correo (no por WhatsApp)
+        'support_url'      => '',       // plataforma de tickets (cuando exista); vacío = se usa el correo
         'info_box'         => '',       // caja informativa bajo la foto del producto (JSON); vacío = texto de ejemplo
         'clp_per_usd'      => '',       // solo para sugerir precios en USD desde los precios en CLP (opcional)
     ];
@@ -149,6 +151,19 @@ function ve_settings_save(array $values): void {
     $st = ve_pdo()->prepare('INSERT INTO ve_settings (k, v) VALUES (:k, :v) ON DUPLICATE KEY UPDATE v = VALUES(v)');
     foreach ($values as $k => $v) $st->execute([':k' => $k, ':v' => (string) $v]);
     ve_settings_all(true);
+}
+/** Correo de soporte técnico ('' si el configurado no es válido). */
+function ve_support_email(): string { $e = trim(ve_setting('support_email')); return filter_var($e, FILTER_VALIDATE_EMAIL) ? $e : ''; }
+/** Dónde pedir soporte: la plataforma de tickets si ya está configurada; si no, el correo. */
+function ve_support_url(): string {
+    $u = trim(ve_setting('support_url')); if ($u !== '' && preg_match('#^https?://#i', $u)) return $u;
+    $e = ve_support_email(); return $e !== '' ? 'mailto:' . $e : '';
+}
+/** Frase lista para textos: «escríbenos a correo@…» o «abre un ticket en …». */
+function ve_support_phrase(): string {
+    $u = trim(ve_setting('support_url'));
+    if ($u !== '' && preg_match('#^https?://#i', $u)) return 'abre un ticket en ' . $u;
+    $e = ve_support_email(); return $e !== '' ? 'escríbenos a ' . $e : 'escríbenos por correo electrónico';
 }
 function ve_pay_hours(): int { return max(1, min(72, (int) ve_setting('pay_hours') ?: 4)); }
 function ve_method_enabled(string $m): bool {
@@ -202,7 +217,7 @@ function ve_send_mail(string $to, string $subject, string $html, string $replyTo
 function ve_mail_html(string $inner): string {
     return '<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#222;line-height:1.55">'
         . '<p style="font-size:18px;font-weight:bold;color:#3E5C76;margin:0 0 14px;">Alquimia Digital · Venezuela</p>' . $inner
-        . '<p style="color:#888;font-size:12px;margin-top:24px;">Si necesitas ayuda, escríbenos por WhatsApp: +58 412-5859613.</p></div>';
+        . '<p style="color:#888;font-size:12px;margin-top:24px;">Soporte técnico: ' . h(ve_support_phrase()) . '. Consultas de venta por WhatsApp: +58 412-5859613.</p></div>';
 }
 function ve_mail_button(string $url, string $label): string {
     return '<p style="margin:18px 0;"><a href="' . h($url) . '" style="background:#B9862A;color:#fff;padding:11px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">' . h($label) . '</a></p>';
@@ -279,11 +294,11 @@ function ve_box_default(): array {
         'btn1' => 'Cómo funciona', 'btn2' => 'Consultar por WhatsApp',
         'guide' => ['t' => 'Guía de uso paso a paso', 's' => 'cómo se instala y activa', 'u' => '#proceso'],
         'items' => [
-            ['i' => 'shield', 't' => 'Garantía de funcionamiento', 'b' => "Si tu licencia deja de funcionar durante la vigencia, te la reponemos o te devolvemos tu dinero.\nSoporte por WhatsApp incluido toda la vigencia."],
+            ['i' => 'shield', 't' => 'Garantía de funcionamiento', 'b' => "Si tu licencia deja de funcionar durante la vigencia, te la reponemos o te devolvemos tu dinero.\nSoporte por correo electrónico incluido toda la vigencia."],
             ['i' => 'bolt', 't' => 'Cómo y cuándo se entrega', 'b' => "Apenas confirmamos tu pago, te enviamos la licencia con las instrucciones por WhatsApp y correo.\nLa entrega se hace dentro de nuestro horario de atención."],
-            ['i' => 'doc', 't' => 'Pago, boleta y factura', 'b' => "Pagas por Binance (USDT) o PagoMóvil (Bs) y subes tu comprobante.\nSi necesitas factura o comprobante de compra, pídelo por WhatsApp con tu número de pedido."],
+            ['i' => 'doc', 't' => 'Pago, boleta y factura', 'b' => "Pagas por Binance (USDT) o PagoMóvil (Bs) y subes tu comprobante.\nSi necesitas factura o comprobante de compra, pídelo por correo electrónico con tu número de pedido."],
         ],
-        'trust' => [['i' => 'shield', 't' => 'Garantía'], ['i' => 'check', 't' => 'Licencia oficial'], ['i' => 'chat', 't' => 'Soporte WhatsApp'], ['i' => 'lock', 't' => 'Pago seguro']],
+        'trust' => [['i' => 'shield', 't' => 'Garantía'], ['i' => 'check', 't' => 'Licencia oficial'], ['i' => 'info', 't' => 'Soporte por correo'], ['i' => 'lock', 't' => 'Pago seguro']],
     ];
 }
 /** Limpia cualquier dato recibido y lo deja en la forma esperada. */
@@ -434,7 +449,7 @@ function ve_cancel_order(int $orderId, string $reason, bool $email = true): bool
     if ($email && $o) {
         ve_send_mail($o['email'], 'Pedido ' . $o['order_number'] . ' cancelado', ve_mail_html(
             '<p>Hola ' . h($o['name']) . ', tu pedido <b>' . h($o['order_number']) . '</b> (' . h($o['product_title']) . ') fue cancelado: ' . h($reason) . '.</p>'
-            . '<p>Si ya pagaste o quieres retomarlo, escríbenos por WhatsApp con tu comprobante y lo reactivamos. También puedes hacer un pedido nuevo cuando quieras.</p>'
+            . '<p>Si ya pagaste o quieres retomarlo, escríbenos con tu comprobante y lo reactivamos. También puedes hacer un pedido nuevo cuando quieras.</p>'
             . ve_mail_button(ve_site_url() . '/', 'Ver el catálogo')), VE_NOTIFY_EMAIL);
     }
     return true;
@@ -540,6 +555,6 @@ function ve_mail_delivered(array $o, string $message = ''): bool {
     $extra = trim($message) !== '' ? '<div style="background:#f6f2e6;padding:12px 14px;border-radius:8px;">' . nl2br(h($message)) . '</div>' : '';
     return ve_send_mail($o['email'], 'Tu pedido ' . $o['order_number'] . ' fue entregado', ve_mail_html(
         '<p>Hola ' . h($o['name']) . ', tu pedido <b>' . h($o['order_number']) . '</b> ya fue entregado:</p>' . ve_items_html($o) . '<p> Revisa tu WhatsApp: ahí tienes tu licencia con las instrucciones.</p>'
-        . $extra . '<p>Si necesitas ayuda para instalar o activar, escríbenos: el soporte está incluido.</p>'
+        . $extra . '<p>Si necesitas soporte para instalar o activar, ' . h(ve_support_phrase()) . ': el soporte está incluido.</p>'
         . ve_mail_button(ve_review_link((int) $o['id']), 'Dejar mi opinión (compra verificada)')), VE_NOTIFY_EMAIL);
 }

@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'rate_mode' => ($_POST['rate_mode'] ?? '') === 'manual' ? 'manual' : 'auto',
             'rate_manual' => trim(preg_replace('/[^0-9,.]/', '', (string) ($_POST['rate_manual'] ?? ''))),
             'pay_hours' => (string) max(1, min(72, (int) ($_POST['pay_hours'] ?? 4))),
+            'support_email' => trim((string) ($_POST['support_email'] ?? '')), 'support_url' => preg_match('#^https?://#i', trim((string) ($_POST['support_url'] ?? ''))) ? trim((string) $_POST['support_url']) : '',
             'clp_per_usd' => trim(preg_replace('/[^0-9,.]/', '', (string) ($_POST['clp_per_usd'] ?? ''))),
             'binance_enabled' => !empty($_POST['binance_enabled']) ? '1' : '0', 'binance_details' => trim((string) ($_POST['binance_details'] ?? '')), 'binance_note' => trim((string) ($_POST['binance_note'] ?? '')),
             'pagomovil_enabled' => !empty($_POST['pagomovil_enabled']) ? '1' : '0', 'pagomovil_details' => trim((string) ($_POST['pagomovil_details'] ?? '')), 'pagomovil_note' => trim((string) ($_POST['pagomovil_note'] ?? '')),
@@ -57,6 +58,10 @@ admin_header('Ajustes'); flash_show(); ?>
     <div class="field"><label>Datos que verá el cliente (banco, teléfono, cédula/RIF, titular)</label><textarea name="pagomovil_details" rows="4" placeholder="Banco: …&#10;Teléfono: …&#10;Cédula/RIF: …"><?= h($s['pagomovil_details']) ?></textarea></div>
     <div class="field"><label>Instrucciones</label><textarea name="pagomovil_note" rows="3"><?= h($s['pagomovil_note']) ?></textarea></div>
   </div></div>
+</div>
+<div class="box"><h2>Soporte técnico</h2>
+  <div class="grid2"><div class="field"><label>Correo de soporte</label><input type="text" name="support_email" value="<?= h($s['support_email']) ?>" placeholder="soporte@tudominio.com"><small>Aparece en el pie de la tienda, en los correos y en las respuestas de ayuda. El soporte técnico no se atiende por WhatsApp.</small></div>
+  <div class="field"><label>Plataforma de tickets (opcional, cuando exista)</label><input type="text" name="support_url" value="<?= h($s['support_url']) ?>" placeholder="https://soporte.tudominio.com"><small>Si lo llenas, los textos dirán «abre un ticket en…» y el pie enlazará ahí en lugar del correo.</small></div></div>
 </div>
 <div class="box"><h2>Plazo de pago y precios</h2>
   <div class="grid2"><div class="field"><label>Horas para pagar antes de la cancelación automática</label><input type="number" name="pay_hours" min="1" max="72" value="<?= h($s['pay_hours']) ?>"><small>El recordatorio automático sale a la mitad del plazo. No se cancelan pedidos con comprobante enviado.</small></div>

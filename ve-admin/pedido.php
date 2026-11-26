@@ -74,7 +74,7 @@ admin_header('Pedido ' . $o['order_number']); flash_show(); ?>
   <?php endif; ?>
   <?php if (in_array($st, ['pendiente', 'pagado'], true)): ?>
     <form method="post" style="display:block;margin-top:14px" onsubmit="return confirm('¿Marcar como entregado y avisar al cliente?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= $id ?>"><input type="hidden" name="action" value="deliver">
-      <div class="field"><label>Mensaje para el cliente en el correo de entrega (opcional)</label><textarea name="message" rows="3" placeholder="Ej.: Te envié la clave por WhatsApp. Cualquier duda, escríbeme."></textarea></div>
+      <div class="field"><label>Mensaje para el cliente en el correo de entrega (opcional)</label><textarea name="message" rows="3" placeholder="Ej.: Te envié la clave por WhatsApp. Para soporte de instalación escribe a nuestro correo de soporte."></textarea></div>
       <button class="btn-a">📦 Marcar como entregado</button></form>
   <?php endif; ?>
   <?php if ($st === 'pendiente'): ?>

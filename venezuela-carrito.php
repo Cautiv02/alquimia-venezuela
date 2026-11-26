@@ -102,7 +102,7 @@ $nUnits = array_sum(array_column($lines, 'qty'));
       <div class="hp"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
       <div class="field"><label for="b-name">Tu nombre</label><input id="b-name" type="text" name="name" required maxlength="120" autocomplete="name"></div>
       <div class="field"><label for="b-email">Correo electrónico</label><input id="b-email" type="email" name="email" required maxlength="190" autocomplete="email"><small>Ahí te enviamos los datos de pago y tus licencias.</small></div>
-      <div class="field"><label for="b-phone">WhatsApp</label><input id="b-phone" type="tel" name="phone" required maxlength="40" autocomplete="tel" placeholder="0412 5859613"><small>Para coordinar la entrega y el soporte.</small></div>
+      <div class="field"><label for="b-phone">WhatsApp</label><input id="b-phone" type="tel" name="phone" required maxlength="40" autocomplete="tel" placeholder="0412 5859613"><small>Para coordinar la entrega de tu licencia.</small></div>
       <div class="pay-methods">
         <?php foreach ($methods as $i => $m): ?>
           <label class="pay-method"><input type="radio" name="method" value="<?= h($m) ?>" <?= $i === 0 ? 'checked' : '' ?>>

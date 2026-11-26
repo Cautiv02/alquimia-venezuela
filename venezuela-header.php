@@ -29,7 +29,7 @@
       </span>
       <a class="btn-wa" href="<?= htmlspecialchars(wa_link('Hola, quiero más información sobre sus productos')) ?>" target="_blank">
         <span class="wa-led <?= is_business_open() ? 'online' : 'offline' ?>"></span>
-        💬 WhatsApp
+        💬 Ventas por WhatsApp
         <span class="wa-status"><?= is_business_open() ? 'En línea ahora' : 'Fuera de horario' ?></span>
       </a>
     </div>

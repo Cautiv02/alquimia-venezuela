@@ -249,7 +249,7 @@ if ($product) {
         <div class="buy-total"><span>Subtotal</span><span style="text-align:right"><span class="t-usd" id="t-usd"></span><br><span class="t-bs" id="t-bs"></span></span></div>
         <button class="btn-buy" type="submit">🛒 Agregar al carrito</button>
         <p style="font-size:.76rem;color:var(--ash);text-align:center;margin:10px 0 0">Puedes comprar varios productos en un solo pedido y pagar una sola vez. Pagas por Binance o PagoMóvil; si no hay pago, el pedido se cancela solo en <?= (int) ve_pay_hours() ?> horas.</p>
-        <p style="text-align:center;margin:10px 0 0"><a class="btn-sec" target="_blank" href="<?= htmlspecialchars(wa_link('Hola, tengo una duda sobre: ' . $product['title'])) ?>">💬 ¿Dudas? Escríbenos por WhatsApp</a></p>
+        <p style="text-align:center;margin:10px 0 0"><a class="btn-sec" target="_blank" href="<?= htmlspecialchars(wa_link('Hola, tengo una duda sobre: ' . $product['title'])) ?>">💬 ¿Dudas antes de comprar? Consulta por WhatsApp</a></p>
       </form>
       <script>
         (function () {
@@ -289,7 +289,7 @@ if ($product) {
       <div class="mini-trust">
         <span>🛡️ Garantía de funcionamiento</span>
         <span>✅ Licencia original</span>
-        <span>📱 Soporte por WhatsApp</span>
+        <span>✉️ Soporte por correo</span>
       </div>
 
       <?php $dbMode = $product['pid'] && ve_db_ready(); ?>
@@ -305,7 +305,7 @@ if ($product) {
         <?php if (!empty($product['long_html'])): ?><div class="rich"><?= $product['long_html'] ?></div>
         <?php elseif ($product['long_desc'] !== ''): ?><p><?= htmlspecialchars($product['long_desc']) ?></p>
         <?php elseif (trim($product['desc_html'] ?? '') !== ''): ?><?= $product['desc_html'] ?>
-        <?php else: ?><p>Licencia original con entrega digital y soporte por WhatsApp.</p><?php endif; ?>
+        <?php else: ?><p>Licencia original con entrega digital y soporte por correo.</p><?php endif; ?>
 
         <div class="whom-grid">
           <div class="whom-card"><h4>Estudiantes</h4><p>Ideal para trabajos, informes y presentaciones a un precio accesible.</p></div>
@@ -366,7 +366,7 @@ if ($product) {
         </div>
         <div class="faq-item">
           <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">¿Qué pasa si tengo un problema después de instalar? <span class="faq-toggle">+</span></div>
-          <div class="faq-a">Escríbenos por WhatsApp y te ayudamos a resolverlo — el soporte está incluido en tu compra.</div>
+          <div class="faq-a">Escríbenos a nuestro correo de soporte y te ayudamos a resolverlo — el soporte está incluido en tu compra.</div>
         </div>
         <div class="faq-item">
           <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">¿Puedo pagar en bolívares? <span class="faq-toggle">+</span></div>

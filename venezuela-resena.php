@@ -46,7 +46,7 @@ if ($can && $pid && !$exists && $_SERVER['REQUEST_METHOD'] === 'POST' && empty($
 <?php include __DIR__ . '/venezuela-header.php'; ?>
 <div class="page-narrow"><div class="panel">
 <?php if (!$order || !$can): ?>
-  <h1>Enlace no válido</h1><p class="lead">Este enlace no es válido o tu pedido aún no está pagado. Si crees que es un error, escríbenos por WhatsApp.</p>
+  <h1>Enlace no válido</h1><p class="lead">Este enlace no es válido o tu pedido aún no está pagado. Si crees que es un error, <?= h(ve_support_phrase()) ?>.</p>
 <?php elseif (!$pid): /* varios productos: elegir cuál reseñar */ ?>
   <h1>¿Qué tal tu compra?</h1>
   <?php if (!$pending): ?><p class="lead">Ya recibimos tus reseñas de este pedido. ¡Gracias! 💛</p><p><a class="btn-sec" href="./">Ver el catálogo</a></p>

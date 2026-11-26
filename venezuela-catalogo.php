@@ -111,7 +111,7 @@ foreach ($secs as $si => $sec):
     <div class="section-head">
       <h2 class="section-title">¿Cómo obtienes tu licencia?</h2>
       <p class="section-note">Sin complicaciones. Elige, haz tu pedido, paga por Binance o PagoMóvil y recibe tu licencia.</p>
-      <p class="section-note">Instrucciones paso a paso con soporte incluido.</p>
+      <p class="section-note">Instrucciones paso a paso con soporte por correo incluido.</p>
     </div>
     <div class="how-grid">
       <div class="how-steps">
@@ -126,14 +126,14 @@ foreach ($secs as $si => $sec):
           <div class="how-step-num">2</div>
           <div>
             <h4>Haz tu pedido y paga</h4>
-            <p>Presiona "Hacer pedido", paga en USDT (Binance) o en bolívares (PagoMóvil) y sube tu comprobante. ¿Dudas? Te ayudamos por WhatsApp.</p>
+            <p>Presiona "Hacer pedido", paga en USDT (Binance) o en bolívares (PagoMóvil) y sube tu comprobante. ¿Dudas antes de comprar? Consúltanos por WhatsApp.</p>
           </div>
         </div>
         <div class="how-step">
           <div class="how-step-num">3</div>
           <div>
             <h4>Recibe y activa</h4>
-            <p>Te enviamos todo por correo electrónico: enlaces de descarga, guía de instalación y licencia. (Soporte incluido si lo necesitas)</p>
+            <p>Te enviamos todo por correo electrónico: enlaces de descarga, guía de instalación y licencia. (Soporte por correo incluido si lo necesitas)</p>
           </div>
         </div>
         <div class="how-step">
@@ -160,7 +160,7 @@ foreach ($secs as $si => $sec):
           <ul>
             <li>Datos de acceso (usuario y clave) o vinculación a tu cuenta</li>
             <li>Acceso completo a funciones originales</li>
-            <li>Soporte durante toda la licencia</li>
+            <li>Soporte por correo durante toda la licencia</li>
           </ul>
         </div>
         <p class="how-type-note">Ambos casos dentro del horario laboral.</p>

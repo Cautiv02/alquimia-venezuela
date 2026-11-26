@@ -19,7 +19,7 @@ if ($order && $_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST['website']) 
     $note = trim(mb_substr((string) ($_POST['note'] ?? ''), 0, 1000));
     $fileName = null; $ext = null;
     if ((int) $cnt->fetchColumn() >= 6) {
-        $err = 'Ya recibimos varios comprobantes de este pedido. Escríbenos por WhatsApp si necesitas ayuda.';
+        $err = 'Ya recibimos varios comprobantes de este pedido. Escríbenos por WhatsApp (ventas y pagos) para revisarlos.';
     } elseif (!empty($_FILES['proof']['tmp_name']) && is_uploaded_file($_FILES['proof']['tmp_name'])) {
         $f = $_FILES['proof'];
         $head = (string) @file_get_contents($f['tmp_name'], false, null, 0, 5);
@@ -88,7 +88,7 @@ $ph = $order ? ve_phone_intl($order['phone']) : '';
     </table>
 
     <?php if ($st === 'entregado'): ?>
-      <div class="alert ok"><b>¡Pedido entregado!</b> Revisa tu WhatsApp y tu correo (<?= h($order['email']) ?>): ahí está tu licencia con las instrucciones. Si necesitas ayuda para activarla, escríbenos.</div>
+      <div class="alert ok"><b>¡Pedido entregado!</b> Revisa tu WhatsApp y tu correo (<?= h($order['email']) ?>): ahí está tu licencia con las instrucciones. Si necesitas soporte para instalarla o activarla, <?= h(ve_support_phrase()) ?>.</div>
       <p><a class="btn-sec" href="<?= h(ve_review_link((int) $order['id'])) ?>">⭐ Dejar mi opinión (compra verificada)</a></p>
     <?php elseif ($st === 'pagado'): ?>
       <div class="alert ok"><b>Pago confirmado ✅.</b> Estamos preparando tu entrega; te la enviamos por WhatsApp y correo en cuanto esté lista.</div>
@@ -121,7 +121,7 @@ $ph = $order ? ve_phone_intl($order['phone']) : '';
         <div class="field"><label for="note">Comentario (opcional)</label><textarea id="note" name="note" rows="2" maxlength="1000"><?= h($_POST['note'] ?? '') ?></textarea></div>
         <button class="btn-buy" type="submit">Enviar comprobante</button>
       </form>
-      <p style="text-align:center;margin:14px 0 0"><a class="btn-sec" target="_blank" href="<?= h(wa_link('Hola, necesito ayuda con mi pedido ' . $order['order_number'])) ?>">💬 ¿Problemas? Escríbenos por WhatsApp</a></p>
+      <p style="text-align:center;margin:14px 0 0"><a class="btn-sec" target="_blank" href="<?= h(wa_link('Hola, tengo una consulta sobre el pago de mi pedido ' . $order['order_number'])) ?>">💬 Consultar sobre mi pedido por WhatsApp (ventas y pagos)</a></p>
       <script>
         (function () {
           var end = <?= (int) $expires ?> * 1000 - (<?= time() ?> * 1000 - Date.now()), el = document.getElementById('left');
