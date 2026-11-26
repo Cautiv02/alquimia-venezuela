@@ -68,7 +68,7 @@ function ve_db_ready(): bool {
 
 function ve_ensure_schema(PDO $pdo): void {
     $marker = __DIR__ . '/ve-schema.ok';
-    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '6') return;
+    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '7') return;
     $t = ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_settings (k VARCHAR(60) NOT NULL PRIMARY KEY, v TEXT NOT NULL)$t");
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_products (
@@ -116,8 +116,8 @@ function ve_ensure_schema(PDO $pdo): void {
             ->execute([':t' => 'Ofertas Flash', ':n' => "Paga en dólares (USDT) o en bolívares (PagoMóvil) a la tasa BCV del día.\nLos precios indicados en bolívares están actualizados en tiempo real."]);
         $pdo->exec('UPDATE ve_products SET section_id = ' . (int) $pdo->lastInsertId() . ' WHERE section_id IS NULL');
     }
-    foreach (['short_desc VARCHAR(300) NULL', 'long_desc TEXT NULL'] as $col) { try { $pdo->exec('ALTER TABLE ve_products ADD COLUMN ' . $col); } catch (Throwable $e) { /* ya existe */ } }
-    @file_put_contents($marker, '6');
+    foreach (['short_desc VARCHAR(300) NULL', 'long_desc TEXT NULL', 'extras TEXT NULL'] as $col) { try { $pdo->exec('ALTER TABLE ve_products ADD COLUMN ' . $col); } catch (Throwable $e) { /* ya existe */ } }
+    @file_put_contents($marker, '7');
 }
 
 /* ───────────── Ajustes (editables en el panel) ───────────── */
@@ -262,6 +262,25 @@ function ve_clean_html(string $html): string {
     // texto suelto de primer nivel → párrafo; se descartan párrafos vacíos
     $out = preg_replace('#<p>(\s|&nbsp;|\x{00A0}|<br\s*/?>)*</p>#iu', '', $out);
     return trim($out);
+}
+
+/* ───────────── Caja de botones bajo la foto del producto (enlaces útiles por producto) ───────────── */
+/** Enlace permitido: http(s), mailto, tel o ruta interna que empiece por "/". '' si no sirve. */
+function ve_safe_url(string $u): string {
+    $u = trim($u);
+    if (preg_match('#^(https?://|mailto:|tel:)#i', $u) || (strlen($u) > 1 && $u[0] === '/' && $u[1] !== '/')) return mb_substr($u, 0, 500);
+    return '';
+}
+/** JSON guardado → ['title','note','items'=>[['i','t','u']]] limpio, o null si no hay botones. */
+function ve_extras_decode(?string $json): ?array {
+    $d = json_decode((string) $json, true); if (!is_array($d)) return null;
+    $items = [];
+    foreach ((array) ($d['items'] ?? []) as $it) {
+        $t = trim(mb_substr((string) ($it['t'] ?? ''), 0, 80)); $u = ve_safe_url((string) ($it['u'] ?? ''));
+        if ($t !== '' && $u !== '') $items[] = ['i' => mb_substr(trim((string) ($it['i'] ?? '')), 0, 8), 't' => $t, 'u' => $u];
+    }
+    if (!$items) return null;
+    return ['title' => trim(mb_substr((string) ($d['title'] ?? ''), 0, 80)) ?: 'Información útil', 'note' => trim(mb_substr((string) ($d['note'] ?? ''), 0, 400)), 'items' => array_slice($items, 0, 12)];
 }
 
 /* ───────────── Secciones de la portada ───────────── */

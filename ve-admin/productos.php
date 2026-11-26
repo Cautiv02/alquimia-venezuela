@@ -34,10 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!in_array($secId, $secIds, true)) $secId = $secIds[0] ?? null;
         $sd = trim(mb_substr(preg_replace('/\s+/u', ' ', (string) ($_POST['short_desc'] ?? '')), 0, 300));
         $ld = ve_clean_html(mb_substr((string) ($_POST['long_desc'] ?? ''), 0, 20000));
-        $pdo->prepare('INSERT INTO ve_products (product_id, slug, title, active, sort_order, section_id, short_desc, long_desc) VALUES (:p,:s,:t,:a,:o,:sec,:sd,:ld)
-            ON DUPLICATE KEY UPDATE slug = VALUES(slug), title = VALUES(title), active = VALUES(active), sort_order = VALUES(sort_order), section_id = VALUES(section_id), short_desc = VALUES(short_desc), long_desc = VALUES(long_desc)')
+        $exItems = [];
+        foreach ((array) ($_POST['ex_t'] ?? []) as $k => $t) $exItems[] = ['i' => (string) ($_POST['ex_i'][$k] ?? ''), 't' => (string) $t, 'u' => (string) ($_POST['ex_u'][$k] ?? '')];
+        $exData = ve_extras_decode(json_encode(['title' => (string) ($_POST['ex_title'] ?? ''), 'note' => (string) ($_POST['ex_note'] ?? ''), 'items' => $exItems], JSON_UNESCAPED_UNICODE));
+        $exJson = $exData ? json_encode($exData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
+        $pdo->prepare('INSERT INTO ve_products (product_id, slug, title, active, sort_order, section_id, short_desc, long_desc, extras) VALUES (:p,:s,:t,:a,:o,:sec,:sd,:ld,:ex)
+            ON DUPLICATE KEY UPDATE slug = VALUES(slug), title = VALUES(title), active = VALUES(active), sort_order = VALUES(sort_order), section_id = VALUES(section_id), short_desc = VALUES(short_desc), long_desc = VALUES(long_desc), extras = VALUES(extras)')
             ->execute([':p' => $pid, ':s' => $slug, ':t' => $title !== '' ? $title : null, ':a' => !empty($_POST['active']) ? 1 : 0, ':o' => (int) ($_POST['sort_order'] ?? 100), ':sec' => $secId,
-                       ':sd' => $sd !== '' ? $sd : null, ':ld' => $ld !== '' ? $ld : null]);
+                       ':sd' => $sd !== '' ? $sd : null, ':ld' => $ld !== '' ? $ld : null, ':ex' => $exJson]);
         $img = trim((string) ($_POST['image_pick'] ?? ''));
         $dirImg = dirname(__DIR__) . '/imagenes/productos';
         if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
@@ -172,6 +176,48 @@ if ($id) {
         <div class="field"><label>Subir una foto nueva (JPG, PNG o WEBP, hasta 4 MB)</label><input type="file" name="image" accept="image/jpeg,image/png,image/webp">
           <?php if ($curImg !== ''): ?><small>Foto actual: <img src="../<?= h($curImg) ?>" alt="" style="height:36px;vertical-align:middle;border-radius:6px"></small><?php endif; ?></div>
       </div>
+      <?php $ex = ve_extras_decode($vp['extras'] ?? null) ?: ['title' => '', 'note' => '', 'items' => []];
+        $icons = ['📘' => 'Guía', '🎥' => 'Video', '⬇️' => 'Descargar', '🔑' => 'Activación', '💬' => 'WhatsApp', 'ℹ️' => 'Información', '✅' => 'Requisitos', '🛠️' => 'Soporte', '🔗' => 'Enlace']; ?>
+      <div class="field"><label>Botones bajo la foto del producto (guías, descargas, enlaces útiles)</label>
+        <div class="exb">
+          <div class="grid2" style="margin-bottom:10px">
+            <input type="text" name="ex_title" maxlength="80" value="<?= h($ex['title']) ?>" placeholder="Título de la caja (por defecto: Información útil)">
+            <input type="text" name="ex_note" maxlength="400" value="<?= h($ex['note']) ?>" placeholder="Texto corto opcional bajo el título">
+          </div>
+          <div id="ex-rows"></div>
+          <button type="button" class="btn-a ghost" id="ex-add">+ Agregar botón</button>
+        </div>
+        <small>Cada botón lleva un ícono, el texto que verá el cliente y el enlace (https://…). Si no agregas ninguno, la caja no se muestra.</small></div>
+      <style>
+        .exb { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: var(--surface-tint); }
+        .exb input, .exb select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-family: var(--sans); font-size: .88rem; background: #fff; box-sizing: border-box; }
+        .exr { display: grid; grid-template-columns: 86px 1fr 1.4fr auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .exr .xb { display: flex; gap: 4px; } .exr .xb button { border: 1px solid var(--line); background: #fff; border-radius: 6px; width: 28px; height: 32px; cursor: pointer; font-size: .75rem; }
+        @media (max-width: 700px) { .exr { grid-template-columns: 70px 1fr; } .exr .xb { grid-column: 1 / -1; } }
+      </style>
+      <script>
+      (function () {
+        var rows = document.getElementById('ex-rows'), ICONS = <?= json_encode($icons, JSON_UNESCAPED_UNICODE) ?>, INIT = <?= json_encode($ex['items'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;
+        function add(d) {
+          d = d || {i: '📘', t: '', u: ''};
+          var r = document.createElement('div'); r.className = 'exr';
+          var sel = document.createElement('select'); sel.name = 'ex_i[]';
+          var found = false; Object.keys(ICONS).forEach(function (k) { var o = document.createElement('option'); o.value = k; o.textContent = k + ' ' + ICONS[k]; if (k === d.i) { o.selected = true; found = true; } sel.appendChild(o); });
+          if (!found && d.i) { var o = document.createElement('option'); o.value = d.i; o.textContent = d.i; o.selected = true; sel.insertBefore(o, sel.firstChild); }
+          var t = document.createElement('input'); t.type = 'text'; t.name = 'ex_t[]'; t.maxLength = 80; t.placeholder = 'Texto del botón (ej. Guía de instalación)'; t.value = d.t;
+          var u = document.createElement('input'); u.type = 'text'; u.name = 'ex_u[]'; u.maxLength = 500; u.placeholder = 'https://…'; u.value = d.u;
+          var xb = document.createElement('div'); xb.className = 'xb';
+          [['▲', -1], ['▼', 1], ['✕', 0]].forEach(function (b) { var bt = document.createElement('button'); bt.type = 'button'; bt.textContent = b[0]; bt.dataset.d = b[1]; bt.title = b[1] ? 'Mover' : 'Quitar'; xb.appendChild(bt); });
+          r.appendChild(sel); r.appendChild(t); r.appendChild(u); r.appendChild(xb); rows.appendChild(r);
+        }
+        INIT.forEach(add);
+        document.getElementById('ex-add').addEventListener('click', function () { add(); rows.lastChild.querySelector('input').focus(); });
+        rows.addEventListener('click', function (e) {
+          var b = e.target.closest('button'); if (!b) return; var r = b.closest('.exr'), d = +b.dataset.d;
+          if (d === 0) r.remove(); else if (d < 0 && r.previousElementSibling) rows.insertBefore(r, r.previousElementSibling); else if (d > 0 && r.nextElementSibling) rows.insertBefore(r.nextElementSibling, r);
+        });
+      })();
+      </script>
       <table class="t"><tr><th>Opción (Chile)</th><th>Precio CLP</th><th>Precio USD</th><th>Nombre a mostrar (opcional)</th></tr>
       <?php foreach ($vars as $v): $sug = ($clp > 0 && $v['price'] > 0) ? round($v['price'] / $clp, 2) : null; ?>
         <tr><td><?= h(ve_clean_text($v['title'])) ?></td><td>$<?= h(number_format((float) $v['price'], 0, ',', '.')) ?></td>

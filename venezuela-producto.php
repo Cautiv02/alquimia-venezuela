@@ -53,10 +53,18 @@ if ($product) {
   .breadcrumb span.sep { margin: 0 6px; opacity: 0.5; }
 
   .product-hero { padding: 20px 0 20px; display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 40px; align-items: start; }
+  .product-side { position: sticky; top: 84px; }
   .product-visual {
     background: var(--surface-tint); border: 1px solid var(--line); border-radius: var(--radius-card);
-    aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: sticky; top: 84px;
+    aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; overflow: hidden;
   }
+  .extras-box { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 16px; }
+  .extras-box h4 { font-family: var(--serif); font-weight: 600; font-size: 1rem; margin: 0 0 4px; }
+  .extras-box p { font-size: 0.84rem; color: var(--text-dim); margin: 0 0 10px; }
+  .extras-list { display: grid; gap: 8px; margin-top: 10px; }
+  .extras-btn { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--text); text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: border-color .15s, background .15s; }
+  .extras-btn:hover { border-color: var(--gold); background: rgba(185,134,42,0.06); }
+  .extras-btn .ei { font-size: 1.1rem; width: 24px; text-align: center; } .extras-btn .et { flex: 1; } .extras-btn .ea { color: var(--gold); }
   .product-visual img { width: 100%; height: 100%; object-fit: contain; }
 
   .product-info .eyebrow { font-size: 0.78rem; color: var(--teal); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
@@ -131,7 +139,7 @@ if ($product) {
 
   @media (max-width: 800px) {
     .product-hero { grid-template-columns: 1fr; }
-    .product-visual { position: static; }
+    .product-side { position: static; }
     .stats-row { grid-template-columns: repeat(2, 1fr); }
     .whom-grid, .steps-row, .related-grid { grid-template-columns: 1fr; }
   }
@@ -155,9 +163,22 @@ if ($product) {
   </div>
 
   <section class="product-hero wrap">
+    <div class="product-side">
     <div class="product-visual">
       <?php $imgPath = product_image_path($product); ?>
       <img src="<?= htmlspecialchars($imgPath ?: $brandLogos[$product['brand_logo']]) ?>" alt="<?= htmlspecialchars($product['title']) ?>" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='<?= htmlspecialchars($brandLogos[$product['brand_logo']]) ?>';">
+    </div>
+    <?php if (!empty($product['extras'])): $ex = $product['extras']; ?>
+      <div class="extras-box">
+        <h4><?= h($ex['title']) ?></h4>
+        <?php if ($ex['note'] !== ''): ?><p><?= nl2br(h($ex['note'])) ?></p><?php endif; ?>
+        <div class="extras-list">
+          <?php foreach ($ex['items'] as $it): $ext = preg_match('#^https?://#i', $it['u']) ? ' target="_blank" rel="noopener"' : ''; ?>
+            <a class="extras-btn" href="<?= h($it['u']) ?>"<?= $ext ?>><span class="ei"><?= h($it['i'] !== '' ? $it['i'] : '🔗') ?></span><span class="et"><?= h($it['t']) ?></span><span class="ea">→</span></a>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    <?php endif; ?>
     </div>
 
     <div class="product-info">
