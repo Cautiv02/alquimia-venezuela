@@ -132,6 +132,7 @@ function ve_setting_defaults(): array {
         'pagomovil_enabled'=> '0', 'pagomovil_details' => '',
         'pagomovil_note'   => 'Haz el PagoMóvil por el monto exacto en bolívares y sube aquí tu comprobante (captura) con la referencia.',
         'expiry_last_run'  => '',
+        'info_box'         => '',       // caja informativa bajo la foto del producto (JSON); vacío = texto de ejemplo
         'clp_per_usd'      => '',       // solo para sugerir precios en USD desde los precios en CLP (opcional)
     ];
 }
@@ -264,23 +265,68 @@ function ve_clean_html(string $html): string {
     return trim($out);
 }
 
-/* ───────────── Caja de botones bajo la foto del producto (enlaces útiles por producto) ───────────── */
-/** Enlace permitido: http(s), mailto, tel o ruta interna que empiece por "/". '' si no sirve. */
+/* ───────────── Caja informativa bajo la foto del producto ───────────── */
+/** Enlace permitido: http(s), mailto, tel, ancla interna (#…) o ruta interna que empiece por "/". '' si no sirve. */
 function ve_safe_url(string $u): string {
     $u = trim($u);
-    if (preg_match('#^(https?://|mailto:|tel:)#i', $u) || (strlen($u) > 1 && $u[0] === '/' && $u[1] !== '/')) return mb_substr($u, 0, 500);
+    if (preg_match('#^(https?://|mailto:|tel:|\#[A-Za-z0-9_-]+$)#i', $u) || (strlen($u) > 1 && $u[0] === '/' && $u[1] !== '/')) return mb_substr($u, 0, 500);
     return '';
 }
-/** JSON guardado → ['title','note','items'=>[['i','t','u']]] limpio, o null si no hay botones. */
-function ve_extras_decode(?string $json): ?array {
-    $d = json_decode((string) $json, true); if (!is_array($d)) return null;
-    $items = [];
+function ve_box_icons(): array { return ['shield' => 'Escudo', 'bolt' => 'Rayo', 'doc' => 'Documento', 'card' => 'Pago', 'box' => 'Entrega', 'info' => 'Información', 'check' => 'Verificado', 'chat' => 'Chat / WhatsApp', 'lock' => 'Candado']; }
+/** Texto de ejemplo: así se ve la caja hasta que la edites. */
+function ve_box_default(): array {
+    return [
+        'btn1' => 'Cómo funciona', 'btn2' => 'Consultar por WhatsApp',
+        'guide' => ['t' => 'Guía de uso paso a paso', 's' => 'cómo se instala y activa', 'u' => '#proceso'],
+        'items' => [
+            ['i' => 'shield', 't' => 'Garantía de funcionamiento', 'b' => "Si tu licencia deja de funcionar durante la vigencia, te la reponemos o te devolvemos tu dinero.\nSoporte por WhatsApp incluido toda la vigencia."],
+            ['i' => 'bolt', 't' => 'Cómo y cuándo se entrega', 'b' => "Apenas confirmamos tu pago, te enviamos la licencia con las instrucciones por WhatsApp y correo.\nLa entrega se hace dentro de nuestro horario de atención."],
+            ['i' => 'doc', 't' => 'Pago, boleta y factura', 'b' => "Pagas por Binance (USDT) o PagoMóvil (Bs) y subes tu comprobante.\nSi necesitas factura o comprobante de compra, pídelo por WhatsApp con tu número de pedido."],
+        ],
+        'trust' => [['i' => 'shield', 't' => 'Garantía'], ['i' => 'check', 't' => 'Licencia oficial'], ['i' => 'chat', 't' => 'Soporte WhatsApp'], ['i' => 'lock', 't' => 'Pago seguro']],
+    ];
+}
+/** Limpia cualquier dato recibido y lo deja en la forma esperada. */
+function ve_box_clean($d): array {
+    $def = ve_box_default(); $icons = ve_box_icons();
+    if (!is_array($d)) return $def;
+    $str = function ($v, int $n) { return trim(mb_substr((string) $v, 0, $n)); };
+    $out = ['btn1' => $str($d['btn1'] ?? '', 40), 'btn2' => $str($d['btn2'] ?? '', 40),
+            'guide' => ['t' => $str($d['guide']['t'] ?? '', 80), 's' => $str($d['guide']['s'] ?? '', 100), 'u' => ve_safe_url((string) ($d['guide']['u'] ?? ''))],
+            'items' => [], 'trust' => []];
     foreach ((array) ($d['items'] ?? []) as $it) {
-        $t = trim(mb_substr((string) ($it['t'] ?? ''), 0, 80)); $u = ve_safe_url((string) ($it['u'] ?? ''));
-        if ($t !== '' && $u !== '') $items[] = ['i' => mb_substr(trim((string) ($it['i'] ?? '')), 0, 8), 't' => $t, 'u' => $u];
+        $t = $str($it['t'] ?? '', 80); if ($t === '') continue;
+        $i = (string) ($it['i'] ?? ''); $out['items'][] = ['i' => isset($icons[$i]) ? $i : 'info', 't' => $t, 'b' => trim(mb_substr(str_replace("\r", '', (string) ($it['b'] ?? '')), 0, 1200))];
+        if (count($out['items']) >= 8) break;
     }
-    if (!$items) return null;
-    return ['title' => trim(mb_substr((string) ($d['title'] ?? ''), 0, 80)) ?: 'Información útil', 'note' => trim(mb_substr((string) ($d['note'] ?? ''), 0, 400)), 'items' => array_slice($items, 0, 12)];
+    foreach ((array) ($d['trust'] ?? []) as $it) {
+        $t = $str($it['t'] ?? '', 30); if ($t === '') continue;
+        $i = (string) ($it['i'] ?? ''); $out['trust'][] = ['i' => isset($icons[$i]) ? $i : 'check', 't' => $t];
+        if (count($out['trust']) >= 4) break;
+    }
+    return $out;
+}
+/** Caja de un producto: la suya si la tiene; si no, la general (Caja informativa en el panel); si no, el ejemplo. */
+function ve_box_for(array $product): array {
+    if (!empty($product['box_own'])) return ve_box_clean($product['box_own']);
+    $g = json_decode(ve_setting('info_box'), true);
+    return is_array($g) ? ve_box_clean($g) : ve_box_default();
+}
+/** Datos del formulario del panel → caja limpia. */
+function ve_box_from_post(array $b): array {
+    $items = []; foreach ((array) ($b['it_t'] ?? []) as $k => $t) $items[] = ['i' => $b['it_i'][$k] ?? '', 't' => $t, 'b' => $b['it_b'][$k] ?? ''];
+    $trust = []; foreach ((array) ($b['tr_t'] ?? []) as $k => $t) $trust[] = ['i' => $b['tr_i'][$k] ?? '', 't' => $t];
+    return ve_box_clean(['btn1' => $b['btn1'] ?? '', 'btn2' => $b['btn2'] ?? '', 'guide' => ['t' => $b['g_t'] ?? '', 's' => $b['g_s'] ?? '', 'u' => $b['g_u'] ?? ''], 'items' => $items, 'trust' => $trust]);
+}
+/** Íconos de línea (SVG) de la caja. */
+function ve_box_icon(string $n, int $size = 18): string {
+    $p = ['shield' => '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
+          'bolt' => '<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>', 'doc' => '<path d="M7 3h8l4 4v14H7z"/><path d="M10 11h6M10 15h6"/>',
+          'card' => '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>', 'box' => '<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+          'info' => '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>', 'check' => '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
+          'chat' => '<path d="M4 5h16v11H9l-5 4z"/>', 'lock' => '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+          'book' => '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>'][$n] ?? '<circle cx="12" cy="12" r="9"/>';
+    return '<svg width="' . $size . '" height="' . $size . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $p . '</svg>';
 }
 
 /* ───────────── Secciones de la portada ───────────── */

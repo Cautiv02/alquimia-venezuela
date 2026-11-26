@@ -278,7 +278,7 @@ function ve_catalog(): array {
         $p['rating'] = $rs[$pid] ?? null;
         $p = ve_finish_product($p, $r['slug'], $extra);
         $p['section'] = (int) $r['section_id'];
-        $p['extras'] = ve_extras_decode($r['extras'] ?? null);
+        $ob = json_decode((string) ($r['extras'] ?? ''), true); $p['box_own'] = is_array($ob) && isset($ob['btn1']) ? $ob : null;
         // Descripciones propias de Venezuela (editadas en el panel): mandan sobre las de Chile y las de los 10 originales
         $vs = trim((string) $r['short_desc']); $vl = trim((string) $r['vlong']);
         if ($vs !== '') { $p['desc'] = $vs; $p['lead'] = $vs; }

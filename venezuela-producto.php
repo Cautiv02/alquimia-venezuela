@@ -53,18 +53,28 @@ if ($product) {
   .breadcrumb span.sep { margin: 0 6px; opacity: 0.5; }
 
   .product-hero { padding: 20px 0 20px; display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 40px; align-items: start; }
-  .product-side { position: sticky; top: 84px; }
+  .product-side { position: static; }
   .product-visual {
     background: var(--surface-tint); border: 1px solid var(--line); border-radius: var(--radius-card);
     aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; overflow: hidden;
   }
-  .extras-box { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 16px; }
-  .extras-box h4 { font-family: var(--serif); font-weight: 600; font-size: 1rem; margin: 0 0 4px; }
-  .extras-box p { font-size: 0.84rem; color: var(--text-dim); margin: 0 0 10px; }
-  .extras-list { display: grid; gap: 8px; margin-top: 10px; }
-  .extras-btn { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--text); text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: border-color .15s, background .15s; }
-  .extras-btn:hover { border-color: var(--gold); background: rgba(185,134,42,0.06); }
-  .extras-btn .ei { font-size: 1.1rem; width: 24px; text-align: center; } .extras-btn .et { flex: 1; } .extras-btn .ea { color: var(--gold); }
+  .ibox { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 16px; box-shadow: 0 6px 22px rgba(30,40,50,0.06); }
+  .ibox-top { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .ibox-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 10px; border-radius: 12px; font-size: 0.88rem; font-weight: 700; text-decoration: none; border: 1px solid; font-family: var(--sans); cursor: pointer; }
+  .ibox-btn.b1 { color: var(--teal); background: rgba(42,125,116,0.07); border-color: rgba(42,125,116,0.3); }
+  .ibox-btn.b2 { color: #1c7a43; background: #eaf7ef; border-color: #b9e3c9; }
+  .ibox-guide { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 10px; background: var(--surface-tint); text-decoration: none; color: var(--text); font-size: 0.88rem; margin-bottom: 14px; }
+  .ibox-guide b { font-weight: 700; } .ibox-guide .gs { color: var(--text-dim); } .ibox-guide .gt { flex: 1; } .ibox-guide svg, .ibox-guide .ga { color: var(--teal); }
+  .ibox-acc { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+  .ibox-acc details { border-top: 1px solid var(--line); } .ibox-acc details:first-child { border-top: 0; }
+  .ibox-acc summary { display: flex; align-items: center; gap: 12px; padding: 13px 14px; cursor: pointer; list-style: none; font-size: 0.9rem; font-weight: 700; }
+  .ibox-acc summary::-webkit-details-marker { display: none; }
+  .ibox-acc summary .si { color: var(--ash); display: flex; } .ibox-acc summary .st { flex: 1; } .ibox-acc summary .sa { color: var(--ash); transition: transform .15s; }
+  .ibox-acc details[open] summary .sa { transform: rotate(90deg); color: var(--teal); }
+  .ibox-acc .ab { padding: 0 14px 14px 46px; font-size: 0.86rem; color: var(--text-dim); line-height: 1.6; }
+  .ibox-acc .ab p { margin: 0 0 6px; }
+  .ibox-trust { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .ibox-trust div { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--text-dim); } .ibox-trust svg { color: var(--teal); }
   .product-visual img { width: 100%; height: 100%; object-fit: contain; }
 
   .product-info .eyebrow { font-size: 0.78rem; color: var(--teal); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
@@ -168,17 +178,32 @@ if ($product) {
       <?php $imgPath = product_image_path($product); ?>
       <img src="<?= htmlspecialchars($imgPath ?: $brandLogos[$product['brand_logo']]) ?>" alt="<?= htmlspecialchars($product['title']) ?>" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='<?= htmlspecialchars($brandLogos[$product['brand_logo']]) ?>';">
     </div>
-    <?php if (!empty($product['extras'])): $ex = $product['extras']; ?>
-      <div class="extras-box">
-        <h4><?= h($ex['title']) ?></h4>
-        <?php if ($ex['note'] !== ''): ?><p><?= nl2br(h($ex['note'])) ?></p><?php endif; ?>
-        <div class="extras-list">
-          <?php foreach ($ex['items'] as $it): $ext = preg_match('#^https?://#i', $it['u']) ? ' target="_blank" rel="noopener"' : ''; ?>
-            <a class="extras-btn" href="<?= h($it['u']) ?>"<?= $ext ?>><span class="ei"><?= h($it['i'] !== '' ? $it['i'] : '🔗') ?></span><span class="et"><?= h($it['t']) ?></span><span class="ea">→</span></a>
+    <?php $bx = ve_box_for($product); ?>
+      <div class="ibox">
+        <?php if ($bx['btn1'] !== '' || $bx['btn2'] !== ''): ?><div class="ibox-top">
+          <?php if ($bx['btn1'] !== ''): ?><a class="ibox-btn b1" href="#proceso" data-goto="proceso"><?= ve_box_icon('check', 16) ?><?= h($bx['btn1']) ?></a><?php endif; ?>
+          <?php if ($bx['btn2'] !== ''): ?><a class="ibox-btn b2" target="_blank" rel="noopener" href="<?= h(wa_link('Hola, quiero consultar sobre: ' . $product['title'])) ?>"><?= ve_box_icon('chat', 16) ?><?= h($bx['btn2']) ?></a><?php endif; ?>
+        </div><?php endif; ?>
+        <?php if ($bx['guide']['t'] !== '' && $bx['guide']['u'] !== ''): $gu = $bx['guide']['u']; $gx = preg_match('#^https?://#i', $gu) ? ' target="_blank" rel="noopener"' : ($gu[0] === '#' ? ' data-goto="' . h(ltrim($gu, '#')) . '"' : ''); ?>
+          <a class="ibox-guide" href="<?= h($gu) ?>"<?= $gx ?>><?= ve_box_icon('book', 16) ?><span class="gt"><b><?= h($bx['guide']['t']) ?></b><?= $bx['guide']['s'] !== '' ? ' <span class="gs">' . h($bx['guide']['s']) . '</span>' : '' ?></span><span class="ga">→</span></a>
+        <?php endif; ?>
+        <?php if ($bx['items']): ?><div class="ibox-acc">
+          <?php foreach ($bx['items'] as $it): ?>
+            <details><summary><span class="si"><?= ve_box_icon($it['i'], 16) ?></span><span class="st"><?= h($it['t']) ?></span><span class="sa">→</span></summary>
+              <?php if ($it['b'] !== ''): ?><div class="ab"><?php foreach (preg_split('/\n+/', $it['b']) as $ln): if (trim($ln) !== ''): ?><p><?= h($ln) ?></p><?php endif; endforeach; ?></div><?php endif; ?>
+            </details>
           <?php endforeach; ?>
-        </div>
+        </div><?php endif; ?>
+        <?php if ($bx['trust']): ?><div class="ibox-trust"><?php foreach ($bx['trust'] as $it): ?><div><?= ve_box_icon($it['i'], 18) ?><span><?= h($it['t']) ?></span></div><?php endforeach; ?></div><?php endif; ?>
       </div>
-    <?php endif; ?>
+      <script>
+        document.querySelectorAll('[data-goto]').forEach(function (a) {
+          a.addEventListener('click', function (e) {
+            var b = document.querySelector('.info-tab-btn[data-tab="' + a.dataset.goto + '"]'); if (!b) return;
+            e.preventDefault(); b.click(); b.scrollIntoView({behavior: 'smooth', block: 'center'});
+          });
+        });
+      </script>
     </div>
 
     <div class="product-info">
