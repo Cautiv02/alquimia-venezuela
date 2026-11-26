@@ -292,7 +292,7 @@ function ve_render_card(array $p, float $rate, bool $filterable = true): void {
     ?>
     <a class="product-card<?= $p['soldout'] ? ' is-soldout' : '' ?>" href="venezuela-producto.php?slug=<?= urlencode($p['slug']) ?>"<?= $data ?>>
       <div class="product-card-image">
-        <img src="<?= h($imgPath ?: $brandLogos[$p['brand_logo']]) ?>" alt="<?= h($p['title']) ?>" loading="lazy">
+        <img src="<?= h($imgPath ?: $brandLogos[$p['brand_logo']]) ?>" alt="<?= h($p['title']) ?>" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='<?= h($brandLogos[$p['brand_logo']]) ?>';">
         <?php if ($p['soldout']): ?><span class="soldout-tag">Agotado</span><?php endif; ?>
       </div>
       <div class="product-card-body">

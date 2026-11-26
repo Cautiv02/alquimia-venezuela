@@ -156,7 +156,7 @@ if ($product) {
   <section class="product-hero wrap">
     <div class="product-visual">
       <?php $imgPath = product_image_path($product); ?>
-      <img src="<?= htmlspecialchars($imgPath ?: $brandLogos[$product['brand_logo']]) ?>" alt="<?= htmlspecialchars($product['title']) ?>">
+      <img src="<?= htmlspecialchars($imgPath ?: $brandLogos[$product['brand_logo']]) ?>" alt="<?= htmlspecialchars($product['title']) ?>" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='<?= htmlspecialchars($brandLogos[$product['brand_logo']]) ?>';">
     </div>
 
     <div class="product-info">
