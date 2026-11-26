@@ -32,9 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = trim(mb_substr((string) ($_POST['title'] ?? ''), 0, 255));
         $secIds = array_map('intval', array_column(ve_sections(false), 'id')); $secId = (int) ($_POST['section_id'] ?? 0);
         if (!in_array($secId, $secIds, true)) $secId = $secIds[0] ?? null;
-        $pdo->prepare('INSERT INTO ve_products (product_id, slug, title, active, sort_order, section_id) VALUES (:p,:s,:t,:a,:o,:sec)
-            ON DUPLICATE KEY UPDATE slug = VALUES(slug), title = VALUES(title), active = VALUES(active), sort_order = VALUES(sort_order), section_id = VALUES(section_id)')
-            ->execute([':p' => $pid, ':s' => $slug, ':t' => $title !== '' ? $title : null, ':a' => !empty($_POST['active']) ? 1 : 0, ':o' => (int) ($_POST['sort_order'] ?? 100), ':sec' => $secId]);
+        $sd = trim(mb_substr(preg_replace('/\s+/u', ' ', (string) ($_POST['short_desc'] ?? '')), 0, 300));
+        $ld = trim(mb_substr(str_replace("\r", '', (string) ($_POST['long_desc'] ?? '')), 0, 6000));
+        $pdo->prepare('INSERT INTO ve_products (product_id, slug, title, active, sort_order, section_id, short_desc, long_desc) VALUES (:p,:s,:t,:a,:o,:sec,:sd,:ld)
+            ON DUPLICATE KEY UPDATE slug = VALUES(slug), title = VALUES(title), active = VALUES(active), sort_order = VALUES(sort_order), section_id = VALUES(section_id), short_desc = VALUES(short_desc), long_desc = VALUES(long_desc)')
+            ->execute([':p' => $pid, ':s' => $slug, ':t' => $title !== '' ? $title : null, ':a' => !empty($_POST['active']) ? 1 : 0, ':o' => (int) ($_POST['sort_order'] ?? 100), ':sec' => $secId,
+                       ':sd' => $sd !== '' ? $sd : null, ':ld' => $ld !== '' ? $ld : null]);
         $img = trim((string) ($_POST['image_pick'] ?? ''));
         $dirImg = dirname(__DIR__) . '/imagenes/productos';
         if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
@@ -104,6 +107,10 @@ if ($id) {
         <div class="field"><label>Orden (menor = primero)</label><input type="number" name="sort_order" value="<?= (int) $vp['sort_order'] ?>"></div>
         <div class="field"><label>&nbsp;</label><label><input type="checkbox" name="active" value="1" <?= $vp['active'] ? 'checked' : '' ?>> Mostrar en la tienda de Venezuela</label></div>
       </div>
+      <div class="field"><label>Descripción corta (tarjeta de la portada y encabezado de la ficha)</label><input type="text" name="short_desc" maxlength="300" value="<?= h($vp['short_desc'] ?? '') ?>" placeholder="Ej.: Licencia permanente para 1 PC, activación online."></div>
+      <div class="field"><label>Descripción completa (pestaña «Descripción»)</label><textarea name="long_desc" rows="8" maxlength="6000" placeholder="Escribe el texto para Venezuela. Deja una línea en blanco entre párrafos."><?= h($vp['long_desc'] ?? '') ?></textarea>
+        <small>Si lo dejas vacío se usa el texto de la tienda de Chile (o el de los 10 originales).</small></div>
+      <?php $chileTxt = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags((string) $p['description_html'])))); if ($chileTxt !== ''): ?><details style="margin:0 0 14px"><summary class="tag" style="cursor:pointer">Ver la descripción de Chile (solo referencia)</summary><p class="tag" style="margin:8px 0 0;white-space:normal"><?= h(mb_substr($chileTxt, 0, 1500)) ?></p></details><?php endif; ?>
       <?php $imgs = array_map('basename', glob(dirname(__DIR__) . '/imagenes/productos/*.{jpg,jpeg,png,webp}', GLOB_BRACE) ?: []); sort($imgs); $curImg = (string) ($vp['image'] ?? ''); ?>
       <div class="grid2">
         <div class="field"><label>Foto del producto en Venezuela</label>

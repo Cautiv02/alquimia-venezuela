@@ -248,7 +248,7 @@ function ve_catalog(): array {
     }
     $pdo = ve_pdo();
     try {
-        $rows = $pdo->query("SELECT vp.slug, vp.section_id, vp.image AS vimage, vp.title AS vtitle, vp.sort_order, p.id AS pid, p.title AS ptitle, p.image_url, p.description_html
+        $rows = $pdo->query("SELECT vp.slug, vp.section_id, vp.short_desc, vp.long_desc AS vlong, vp.image AS vimage, vp.title AS vtitle, vp.sort_order, p.id AS pid, p.title AS ptitle, p.image_url, p.description_html
             FROM ve_products vp JOIN products p ON p.id = vp.product_id
             WHERE vp.active = 1 AND p.status = 'activo' ORDER BY vp.sort_order ASC, p.title ASC")->fetchAll();
     } catch (Throwable $e) { error_log('[ve] catálogo: ' . $e->getMessage()); return $cache = []; }
@@ -278,6 +278,10 @@ function ve_catalog(): array {
         $p['rating'] = $rs[$pid] ?? null;
         $p = ve_finish_product($p, $r['slug'], $extra);
         $p['section'] = (int) $r['section_id'];
+        // Descripciones propias de Venezuela (editadas en el panel): mandan sobre las de Chile y las de los 10 originales
+        $vs = trim((string) $r['short_desc']); $vl = trim((string) $r['vlong']);
+        if ($vs !== '') { $p['desc'] = $vs; $p['lead'] = $vs; }
+        if ($vl !== '') { $p['long_desc'] = $vl; if ($vs === '') { $p['lead'] = mb_strlen(strtok($vl, "\n")) > 240 ? mb_substr(strtok($vl, "\n"), 0, 237) . '…' : (string) strtok($vl, "\n"); } }
         if (!empty($r['vimage']) && is_file(__DIR__ . '/' . $r['vimage'])) $p['image'] = $r['vimage'];  // foto propia elegida en el panel
         if (!array_filter(array_column($p['variants'], 'avail'))) $p['soldout'] = true;
         $out[$r['slug']] = $p;

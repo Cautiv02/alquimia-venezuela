@@ -163,7 +163,7 @@ if ($product) {
       <div class="eyebrow"><?= htmlspecialchars($product['category']) ?></div>
       <h1><?= htmlspecialchars($product['title']) ?></h1>
       <?php if ($rStat): ?><p class="rating-line">★ <?= h(number_format($rStat['avg'], 1, ',', '')) ?> <span>· <?= (int) $rStat['n'] ?> reseña<?= $rStat['n'] === 1 ? '' : 's' ?> con compra verificada</span></p><?php endif; ?>
-      <?php $lead = $product['long_desc'] !== '' ? $product['long_desc'] : ($product['desc'] !== '' ? $product['desc'] : 'Licencia original con entrega digital y soporte.'); ?>
+      <?php $lead = !empty($product['lead']) ? $product['lead'] : ($product['long_desc'] !== '' ? $product['long_desc'] : ($product['desc'] !== '' ? $product['desc'] : 'Licencia original con entrega digital y soporte.')); ?>
       <p class="lead"><?= htmlspecialchars($lead) ?></p>
 
       <?php if (!empty($product['stats'])): ?>
@@ -255,7 +255,7 @@ if ($product) {
       </div>
 
       <div class="info-panel active" id="tab-desc">
-        <?php if ($product['long_desc'] !== ''): ?><p><?= htmlspecialchars($product['long_desc']) ?></p>
+        <?php if ($product['long_desc'] !== ''): ?><?php foreach (preg_split('/\R{2,}/', trim($product['long_desc'])) as $para): ?><p><?= nl2br(htmlspecialchars(trim($para))) ?></p><?php endforeach; ?>
         <?php elseif (trim($product['desc_html'] ?? '') !== ''): ?><?= $product['desc_html'] ?>
         <?php else: ?><p>Licencia original con entrega digital y soporte por WhatsApp.</p><?php endif; ?>
 

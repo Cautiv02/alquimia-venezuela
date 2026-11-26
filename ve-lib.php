@@ -68,7 +68,7 @@ function ve_db_ready(): bool {
 
 function ve_ensure_schema(PDO $pdo): void {
     $marker = __DIR__ . '/ve-schema.ok';
-    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '5') return;
+    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '6') return;
     $t = ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_settings (k VARCHAR(60) NOT NULL PRIMARY KEY, v TEXT NOT NULL)$t");
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_products (
@@ -116,7 +116,8 @@ function ve_ensure_schema(PDO $pdo): void {
             ->execute([':t' => 'Ofertas Flash', ':n' => "Paga en dólares (USDT) o en bolívares (PagoMóvil) a la tasa BCV del día.\nLos precios indicados en bolívares están actualizados en tiempo real."]);
         $pdo->exec('UPDATE ve_products SET section_id = ' . (int) $pdo->lastInsertId() . ' WHERE section_id IS NULL');
     }
-    @file_put_contents($marker, '5');
+    foreach (['short_desc VARCHAR(300) NULL', 'long_desc TEXT NULL'] as $col) { try { $pdo->exec('ALTER TABLE ve_products ADD COLUMN ' . $col); } catch (Throwable $e) { /* ya existe */ } }
+    @file_put_contents($marker, '6');
 }
 
 /* ───────────── Ajustes (editables en el panel) ───────────── */
