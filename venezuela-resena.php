@@ -42,7 +42,7 @@ if ($can && !$exists && $_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST['w
   <h1>Enlace no válido</h1><p class="lead">Este enlace no es válido o tu pedido aún no está pagado. Si crees que es un error, escríbenos por WhatsApp.</p>
 <?php elseif ($exists || $done): ?>
   <h1>¡Gracias por tu opinión! 💛</h1><p class="lead"><?= $done ? 'La revisaremos y la publicaremos pronto con la insignia de compra verificada.' : 'Ya recibimos tu reseña de este pedido. ¡Gracias!' ?></p>
-  <p><a class="btn-sec" href="venezuela-catalogo.php">Ver el catálogo</a></p>
+  <p><a class="btn-sec" href="./">Ver el catálogo</a></p>
 <?php else: ?>
   <h1>¿Qué tal tu compra?</h1>
   <p class="lead"><?= h($order['product_title']) ?> · pedido <?= h($order['order_number']) ?> <?= ve_verified_badge() ?></p>

@@ -251,7 +251,7 @@ function ve_cancel_order(int $orderId, string $reason, bool $email = true): bool
         ve_send_mail($o['email'], 'Pedido ' . $o['order_number'] . ' cancelado', ve_mail_html(
             '<p>Hola ' . h($o['name']) . ', tu pedido <b>' . h($o['order_number']) . '</b> (' . h($o['product_title']) . ') fue cancelado: ' . h($reason) . '.</p>'
             . '<p>Si ya pagaste o quieres retomarlo, escríbenos por WhatsApp con tu comprobante y lo reactivamos. También puedes hacer un pedido nuevo cuando quieras.</p>'
-            . ve_mail_button(ve_site_url() . '/venezuela-catalogo.php', 'Ver el catálogo')), VE_NOTIFY_EMAIL);
+            . ve_mail_button(ve_site_url() . '/', 'Ver el catálogo')), VE_NOTIFY_EMAIL);
     }
     return true;
 }

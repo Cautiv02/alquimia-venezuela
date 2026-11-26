@@ -7,12 +7,12 @@
 require_once __DIR__ . '/venezuela-data.php';
 
 function ve_order_fail(string $slug, string $msg): void {
-    $back = $slug !== '' ? 'venezuela-producto.php?slug=' . urlencode($slug) . '&error=' . urlencode($msg) . '#buy-form' : 'venezuela-catalogo.php';
+    $back = $slug !== '' ? 'venezuela-producto.php?slug=' . urlencode($slug) . '&error=' . urlencode($msg) . '#buy-form' : './';
     header('Location: ' . $back);
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: venezuela-catalogo.php'); exit; }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: ./'); exit; }
 if (!empty($_POST['website'])) { http_response_code(204); exit; } // campo trampa para bots
 
 $slug = (string) ($_POST['slug'] ?? '');

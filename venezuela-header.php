@@ -1,12 +1,12 @@
 <header class="site-header">
   <div class="wrap nav-row">
-    <a class="logo" href="venezuela-catalogo.php">
+    <a class="logo" href="./">
       <img src="imagenes/logo.png" alt="Alquimia Digital">
     </a>
     <nav class="nav-links">
-      <a href="venezuela-catalogo.php#catalogo">Catálogo</a>
-      <a href="venezuela-catalogo.php#como-comprar">¿Cómo comprar?</a>
-      <a href="venezuela-catalogo.php#resenas">Reseñas de Clientes</a>
+      <a href="./#catalogo">Catálogo</a>
+      <a href="./#como-comprar">¿Cómo comprar?</a>
+      <a href="./#resenas">Reseñas de Clientes</a>
     </nav>
     <div class="nav-actions">
       <span class="flag-icon" title="Venezuela">

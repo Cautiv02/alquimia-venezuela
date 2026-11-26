@@ -67,7 +67,7 @@ $ph = $order ? ve_phone_intl($order['phone']) : '';
 <div class="page-narrow">
 <?php if (!$order): ?>
   <div class="panel"><h1>No encontramos tu pedido</h1><p class="lead">Revisa el enlace que te enviamos por correo o escríbenos por WhatsApp.</p>
-    <p><a class="btn-sec" href="venezuela-catalogo.php">Ver el catálogo</a></p></div>
+    <p><a class="btn-sec" href="./">Ver el catálogo</a></p></div>
 <?php else:
   $st = $order['status']; $isBin = $order['method'] === 'binance'; ?>
   <div class="steps-mini">
@@ -88,7 +88,7 @@ $ph = $order ? ve_phone_intl($order['phone']) : '';
     <?php elseif ($st === 'anulado'): ?>
       <div class="alert err"><b>Este pedido fue cancelado</b><?= $order['cancel_reason'] ? ' (' . h($order['cancel_reason']) . ')' : '' ?>.</div>
       <p>Si ya pagaste, escríbenos por WhatsApp con tu comprobante y lo reactivamos. Si no, puedes hacer un pedido nuevo.</p>
-      <p><a class="btn-sec" href="venezuela-catalogo.php">Ver el catálogo</a>
+      <p><a class="btn-sec" href="./">Ver el catálogo</a>
          <a class="btn-sec" target="_blank" href="<?= h(wa_link('Hola, mi pedido ' . $order['order_number'] . ' fue cancelado y quiero revisarlo')) ?>">💬 Escribir por WhatsApp</a></p>
     <?php else: /* pendiente */ ?>
       <?php if ($done): ?><div class="alert ok"><b>¡Comprobante recibido! 🎉</b> Lo revisaremos y te avisamos por correo y WhatsApp en cuanto confirmemos tu pago.</div>

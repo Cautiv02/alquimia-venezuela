@@ -55,7 +55,7 @@ function admin_header(string $title): void {
 <div class="adm">
   <div class="adm-top">
     <div><strong style="font-family:var(--serif);font-size:1.2rem;">Panel · Venezuela</strong></div>
-    <div><a href="index.php">Pedidos<?= $att ? ' <span class="badge">' . $att . '</span>' : '' ?></a><a href="productos.php">Productos</a><a href="resenas.php">Reseñas<?= $rv ? ' <span class="badge">' . $rv . '</span>' : '' ?></a><a href="ajustes.php">Ajustes</a><a href="../venezuela-catalogo.php" target="_blank">Ver tienda</a><a href="logout.php">Salir</a></div>
+    <div><a href="index.php">Pedidos<?= $att ? ' <span class="badge">' . $att . '</span>' : '' ?></a><a href="productos.php">Productos</a><a href="resenas.php">Reseñas<?= $rv ? ' <span class="badge">' . $rv . '</span>' : '' ?></a><a href="ajustes.php">Ajustes</a><a href="../" target="_blank">Ver tienda</a><a href="logout.php">Salir</a></div>
   </div>
 <?php }
 function admin_footer(): void { echo '</div></body></html>'; }

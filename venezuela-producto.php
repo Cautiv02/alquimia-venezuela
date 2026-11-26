@@ -143,13 +143,13 @@ if ($product) {
 <?php if (!$product): ?>
   <div class="not-found">
     <h1>Producto no encontrado</h1>
-    <p><a href="venezuela-catalogo.php">Volver al catálogo</a></p>
+    <p><a href="./">Volver al catálogo</a></p>
   </div>
 <?php else: ?>
 
   <div class="wrap breadcrumb">
-    <a href="venezuela-catalogo.php">Catálogo</a><span class="sep">/</span>
-    <a href="venezuela-catalogo.php#catalogo"><?= htmlspecialchars($product['category']) ?></a><span class="sep">/</span>
+    <a href="./">Catálogo</a><span class="sep">/</span>
+    <a href="./#catalogo"><?= htmlspecialchars($product['category']) ?></a><span class="sep">/</span>
     <span><?= htmlspecialchars($product['title']) ?></span>
   </div>
 
