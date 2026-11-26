@@ -45,9 +45,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set('Guardado. Se ve en la tienda si está activo y tiene al menos una opción con precio en USD.'); header('Location: productos.php?id=' . $pid); exit;
     }
     if ($a === 'import') {
-        $n = 0;
+        $n = 0; $usedPid = [];
         foreach ((array) ($_POST['m'] ?? []) as $slug => $pid) {
-            $pid = (int) $pid; $static = ve_static()[$slug] ?? null; if (!$pid || !$static) continue;
+            $pid = (int) $pid; $static = ve_static()[$slug] ?? null; if (!$pid || !$static || isset($usedPid[$pid])) continue;
+            $usedPid[$pid] = true;
             $pdo->prepare('INSERT INTO ve_products (product_id, slug, title, active, sort_order) VALUES (:p,:s,:t,1,:o) ON DUPLICATE KEY UPDATE slug = VALUES(slug), title = VALUES(title), active = 1, sort_order = VALUES(sort_order)')
                 ->execute([':p' => $pid, ':s' => $slug, ':t' => $static['title'], ':o' => 10 + $n * 10]);
             $vs = $pdo->prepare('SELECT id, title FROM product_variants WHERE product_id = :p'); $vs->execute([':p' => $pid]); $dbv = $vs->fetchAll();
@@ -126,6 +127,8 @@ if (isset($_GET['importar'])) {
         }
         $suggest[$slug] = ['s' => $s, 'p' => $best, 'score' => $bs];
     }
+    $cnt = []; foreach ($suggest as $r) if ($r['p']) $cnt[$r['p']['id']] = ($cnt[$r['p']['id']] ?? 0) + 1;
+    foreach ($suggest as $k => $r) $suggest[$k]['dup'] = $r['p'] && $cnt[$r['p']['id']] > 1;
 }
 admin_header('Productos'); flash_show(); ?>
 <?php if (isset($_GET['importar'])): ?>
@@ -133,8 +136,8 @@ admin_header('Productos'); flash_show(); ?>
   <h2>Importar los 10 productos originales</h2>
   <p class="tag">Busqué en la tienda de Chile el producto más parecido a cada uno. Desmarca los que no coincidan (los editas a mano después). Se cargan sus precios en USD actuales en las opciones cuyo nombre coincida (p. ej. "1 PC", "3 PC").</p>
   <table class="t"><tr><th></th><th>Producto actual de Venezuela</th><th>Producto encontrado en Chile</th><th>Parecido</th></tr>
-  <?php foreach ($suggest as $slug => $r): ?><tr><td><input type="checkbox" name="m[<?= h($slug) ?>]" value="<?= (int) ($r['p']['id'] ?? 0) ?>" <?= $r['p'] && $r['score'] >= 0.5 ? 'checked' : '' ?> <?= $r['p'] ? '' : 'disabled' ?>></td>
-    <td><?= h($r['s']['title']) ?></td><td><?= $r['p'] ? h(ve_clean_text($r['p']['title'])) : '—' ?></td><td><?= (int) round($r['score'] * 100) ?>%</td></tr><?php endforeach; ?></table>
+  <?php foreach ($suggest as $slug => $r): ?><tr><td><input type="checkbox" name="m[<?= h($slug) ?>]" value="<?= (int) ($r['p']['id'] ?? 0) ?>" <?= $r['p'] && $r['score'] >= 0.7 && empty($r['dup']) ? 'checked' : '' ?> <?= $r['p'] ? '' : 'disabled' ?>></td>
+    <td><?= h($r['s']['title']) ?></td><td><?= $r['p'] ? h(ve_clean_text($r['p']['title'])) : '—' ?></td><td><?= (int) round($r['score'] * 100) ?>%<?= !empty($r['dup']) ? ' <b style="color:#b45309">¡repetido!</b>' : '' ?></td></tr><?php endforeach; ?></table>
   <p><button class="btn-a">Importar seleccionados</button> <a class="btn-a ghost" href="productos.php">Cancelar</a></p></form>
 <?php endif; ?>
 <div class="toolbar"><form method="get" style="display:flex;gap:8px;flex:1"><input type="text" name="q" value="<?= h($q) ?>" placeholder="Buscar producto de la tienda de Chile…" style="flex:1;padding:8px 14px;border:1px solid var(--line);border-radius:20px">
