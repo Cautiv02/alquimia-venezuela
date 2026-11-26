@@ -248,7 +248,7 @@ function ve_catalog(): array {
     }
     $pdo = ve_pdo();
     try {
-        $rows = $pdo->query("SELECT vp.slug, vp.title AS vtitle, vp.sort_order, p.id AS pid, p.title AS ptitle, p.image_url, p.description_html
+        $rows = $pdo->query("SELECT vp.slug, vp.image AS vimage, vp.title AS vtitle, vp.sort_order, p.id AS pid, p.title AS ptitle, p.image_url, p.description_html
             FROM ve_products vp JOIN products p ON p.id = vp.product_id
             WHERE vp.active = 1 AND p.status = 'activo' ORDER BY vp.sort_order ASC, p.title ASC")->fetchAll();
     } catch (Throwable $e) { error_log('[ve] catálogo: ' . $e->getMessage()); return $cache = []; }
@@ -277,6 +277,7 @@ function ve_catalog(): array {
               'desc_html' => strip_tags((string) $r['description_html'], '<p><br><ul><ol><li><strong><b><em><i><h3><h4>')];
         $p['rating'] = $rs[$pid] ?? null;
         $p = ve_finish_product($p, $r['slug'], $extra);
+        if (!empty($r['vimage']) && is_file(__DIR__ . '/' . $r['vimage'])) $p['image'] = $r['vimage'];  // foto propia elegida en el panel
         if (!array_filter(array_column($p['variants'], 'avail'))) $p['soldout'] = true;
         $out[$r['slug']] = $p;
     }

@@ -68,7 +68,7 @@ function ve_db_ready(): bool {
 
 function ve_ensure_schema(PDO $pdo): void {
     $marker = __DIR__ . '/ve-schema.ok';
-    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '2') return;
+    if (is_file($marker) && trim((string) @file_get_contents($marker)) === '3') return;
     $t = ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_settings (k VARCHAR(60) NOT NULL PRIMARY KEY, v TEXT NOT NULL)$t");
     $pdo->exec("CREATE TABLE IF NOT EXISTS ve_products (
@@ -98,7 +98,8 @@ function ve_ensure_schema(PDO $pdo): void {
         product_title VARCHAR(255) NOT NULL, author VARCHAR(120) NOT NULL, rating TINYINT UNSIGNED NOT NULL, content TEXT NOT NULL,
         verified TINYINT(1) NOT NULL DEFAULT 1, published TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
         UNIQUE KEY uq_order (order_id), KEY (product_id, published), KEY (published, created_at))$t");
-    @file_put_contents($marker, '2');
+    try { $pdo->exec('ALTER TABLE ve_products ADD COLUMN image VARCHAR(200) NULL'); } catch (Throwable $e) { /* ya existe */ }
+    @file_put_contents($marker, '3');
 }
 
 /* ───────────── Ajustes (editables en el panel) ───────────── */

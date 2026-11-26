@@ -33,6 +33,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare('INSERT INTO ve_products (product_id, slug, title, active, sort_order) VALUES (:p,:s,:t,:a,:o)
             ON DUPLICATE KEY UPDATE slug = VALUES(slug), title = VALUES(title), active = VALUES(active), sort_order = VALUES(sort_order)')
             ->execute([':p' => $pid, ':s' => $slug, ':t' => $title !== '' ? $title : null, ':a' => !empty($_POST['active']) ? 1 : 0, ':o' => (int) ($_POST['sort_order'] ?? 100)]);
+        $img = trim((string) ($_POST['image_pick'] ?? ''));
+        $dirImg = dirname(__DIR__) . '/imagenes/productos';
+        if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $f = $_FILES['image']; $info = @getimagesize($f['tmp_name']);
+            $ext = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'][$info['mime'] ?? ''] ?? '';
+            if (!$ext || $f['size'] > 4 * 1024 * 1024) { flash_set('La foto debe ser JPG, PNG o WEBP de hasta 4 MB.', true); header('Location: productos.php?id=' . $pid); exit; }
+            if (!is_dir($dirImg)) @mkdir($dirImg, 0755, true);
+            $name = $slug . '-' . time() . '.' . $ext;
+            if (move_uploaded_file($f['tmp_name'], $dirImg . '/' . $name)) { @chmod($dirImg . '/' . $name, 0644); $img = 'imagenes/productos/' . $name; }
+            else { flash_set('No se pudo guardar la foto (revisa permisos de imagenes/productos).', true); header('Location: productos.php?id=' . $pid); exit; }
+        }
+        if ($img !== '' && !preg_match('#^imagenes/productos/[A-Za-z0-9._-]+$#', $img)) $img = '';
+        $pdo->prepare('UPDATE ve_products SET image = :i WHERE product_id = :p')->execute([':i' => $img !== '' ? $img : null, ':p' => $pid]);
         $vs = $pdo->prepare('SELECT id FROM product_variants WHERE product_id = :p'); $vs->execute([':p' => $pid]);
         $up = $pdo->prepare('INSERT INTO ve_prices (variant_id, price_usd, label) VALUES (:v,:p,:l) ON DUPLICATE KEY UPDATE price_usd = VALUES(price_usd), label = VALUES(label)');
         $del = $pdo->prepare('DELETE FROM ve_prices WHERE variant_id = :v');
@@ -79,7 +92,7 @@ if ($id) {
     $clp = (float) str_replace(',', '.', ve_setting('clp_per_usd'));
     admin_header('Producto'); flash_show(); ?>
     <p><a href="productos.php" class="muted" style="text-decoration:none">← Productos</a></p>
-    <form method="post" class="box"><?= csrf_field() ?><input type="hidden" name="action" value="save"><input type="hidden" name="pid" value="<?= $id ?>">
+    <form method="post" class="box" enctype="multipart/form-data"><?= csrf_field() ?><input type="hidden" name="action" value="save"><input type="hidden" name="pid" value="<?= $id ?>">
       <h2><?= h(ve_clean_text($p['title'])) ?></h2>
       <p class="tag">Producto de la tienda de Chile (nombre, foto, descripción y stock se editan allá).</p>
       <div class="grid2">
@@ -87,6 +100,15 @@ if ($id) {
         <div class="field"><label>Nombre en la tienda de Venezuela (opcional)</label><input type="text" name="title" value="<?= h($vp['title']) ?>" placeholder="<?= h(ve_clean_text($p['title'])) ?>"></div>
         <div class="field"><label>Orden (menor = primero)</label><input type="number" name="sort_order" value="<?= (int) $vp['sort_order'] ?>"></div>
         <div class="field"><label>&nbsp;</label><label><input type="checkbox" name="active" value="1" <?= $vp['active'] ? 'checked' : '' ?>> Mostrar en la tienda de Venezuela</label></div>
+      </div>
+      <?php $imgs = array_map('basename', glob(dirname(__DIR__) . '/imagenes/productos/*.{jpg,jpeg,png,webp}', GLOB_BRACE) ?: []); sort($imgs); $curImg = (string) ($vp['image'] ?? ''); ?>
+      <div class="grid2">
+        <div class="field"><label>Foto del producto en Venezuela</label>
+          <select name="image_pick"><option value="">Usar la de la tienda de Chile</option>
+          <?php foreach ($imgs as $f): $v = 'imagenes/productos/' . $f; ?><option value="<?= h($v) ?>" <?= $curImg === $v ? 'selected' : '' ?>><?= h($f) ?></option><?php endforeach; ?></select>
+          <small>Elige una foto que ya está en la carpeta <code>imagenes/productos</code> o sube una nueva aquí al lado.</small></div>
+        <div class="field"><label>Subir una foto nueva (JPG, PNG o WEBP, hasta 4 MB)</label><input type="file" name="image" accept="image/jpeg,image/png,image/webp">
+          <?php if ($curImg !== ''): ?><small>Foto actual: <img src="../<?= h($curImg) ?>" alt="" style="height:36px;vertical-align:middle;border-radius:6px"></small><?php endif; ?></div>
       </div>
       <table class="t"><tr><th>Opción (Chile)</th><th>Precio CLP</th><th>Precio USD</th><th>Nombre a mostrar (opcional)</th></tr>
       <?php foreach ($vars as $v): $sug = ($clp > 0 && $v['price'] > 0) ? round($v['price'] / $clp, 2) : null; ?>
