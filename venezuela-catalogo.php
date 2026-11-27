@@ -26,11 +26,26 @@ foreach ($catalog as $slug => $p) {
 foreach ($facetOpts as &$fo) { arsort($fo); } unset($fo);
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-VE">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Alquimia Digital Venezuela — Software original</title>
+<?php
+$seoBase = ve_site_url() . '/';
+ve_seo_head([
+  'title' => 'Licencias originales de Windows, Office y Autodesk en Venezuela | Alquimia Digital',
+  'desc' => 'Compra licencias originales de Windows, Office, Autodesk y antivirus en Venezuela. Entrega digital, pago en USDT o Pago Móvil y soporte técnico por correo.',
+  'canonical' => $seoBase,
+  'image' => 'imagenes/banner-principal.jpg',
+  'jsonld' => [[
+    '@context' => 'https://schema.org', '@type' => 'Organization', 'name' => 'Alquimia Digital Venezuela',
+    'url' => $seoBase, 'logo' => $seoBase . 'imagenes/logo.png', 'areaServed' => 'VE',
+    'contactPoint' => [['@type' => 'ContactPoint', 'contactType' => 'customer support', 'email' => ve_support_email(), 'availableLanguage' => 'es']],
+  ], [
+    '@context' => 'https://schema.org', '@type' => 'WebSite', 'name' => 'Alquimia Digital Venezuela', 'url' => $seoBase, 'inLanguage' => 'es-VE',
+  ]],
+]);
+?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -47,9 +62,10 @@ foreach ($facetOpts as &$fo) { arsort($fo); } unset($fo);
 
 <?php include __DIR__ . '/venezuela-header.php'; ?>
 
+<h1 style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden">Licencias originales de software en Venezuela: Windows, Office, Autodesk y antivirus</h1>
 <section class="ve-banner">
   <div class="ve-banner-inner">
-    <img src="imagenes/banner-principal.jpg" alt="Alquimia Digital — Seguro, rápido y garantizado. Soporte técnico especializado, 8 años y más de 12.000 clientes, envíos digitales rápidos, presencia internacional.">
+    <img src="imagenes/banner-principal.jpg" alt="Alquimia Digital Venezuela: licencias originales con entrega digital">
 
   </div>
 </section>

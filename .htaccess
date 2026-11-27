@@ -13,3 +13,8 @@ RewriteCond %{REQUEST_METHOD} =GET
 RewriteCond %{THE_REQUEST} \s(/[^\s?]*/)(?:index|venezuela-catalogo3?)\.php(\?[^\s]*)?\s [NC]
 RewriteRule ^ %1%2 [R=301,L,NE]
 </IfModule>
+
+# Sitemap: /ve/sitemap.xml -> sitemap.php (regla aislada)
+<IfModule mod_rewrite.c>
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+</IfModule>

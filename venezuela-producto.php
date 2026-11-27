@@ -24,6 +24,7 @@ if (ve_db_ready()) {
     if (ve_method_enabled('binance')) $methods[] = 'binance';
     if (ve_method_enabled('pagomovil') && $rate > 0) $methods[] = 'pagomovil';
 }
+if (!$product) http_response_code(404);
 $err = (string) ($_GET['error'] ?? '');
 $reviews = $product && $product['pid'] ? ve_own_reviews(40, (int) $product['pid']) : [];
 $rStat = $product && $product['pid'] ? (ve_review_stats()[(int) $product['pid']] ?? null) : null;
@@ -38,11 +39,32 @@ if ($product) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-VE">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= $product ? htmlspecialchars($product['title']) . ' | Alquimia Digital Venezuela' : 'Producto no encontrado' ?></title>
+<?php
+if ($product) {
+    $pUrl = ve_site_url() . '/venezuela-producto.php?slug=' . rawurlencode($slug);
+    $pImg = product_image_path($product);
+    $pDesc = $product['lead'] ?? ($product['desc'] ?? '');
+    if (trim(strip_tags((string) $pDesc)) === '') $pDesc = 'Compra ' . $product['title'] . ' original en Venezuela. Entrega digital, pago en USDT o Pago Móvil y soporte técnico por correo.';
+    $offers = [];
+    foreach ($product['variants'] as $v) {
+        $offers[] = ['@type' => 'Offer', 'price' => number_format((float) $v['price'], 2, '.', ''), 'priceCurrency' => 'USD', 'url' => $pUrl,
+            'availability' => (!$product['soldout'] && !empty($v['avail'])) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock', 'itemCondition' => 'https://schema.org/NewCondition'];
+    }
+    $ld = ['@context' => 'https://schema.org', '@type' => 'Product', 'name' => $product['title'], 'image' => ve_seo_abs_image($pImg),
+        'description' => ve_seo_text((string) $pDesc, 300), 'brand' => ['@type' => 'Brand', 'name' => (string) ($product['brand'] ?? 'Alquimia Digital')], 'offers' => $offers];
+    if ($rStat && $rStat['n'] > 0) $ld['aggregateRating'] = ['@type' => 'AggregateRating', 'ratingValue' => round($rStat['avg'], 1), 'reviewCount' => $rStat['n']];
+    $crumb = ['@context' => 'https://schema.org', '@type' => 'BreadcrumbList', 'itemListElement' => [
+        ['@type' => 'ListItem', 'position' => 1, 'name' => 'Inicio', 'item' => ve_site_url() . '/'],
+        ['@type' => 'ListItem', 'position' => 2, 'name' => $product['title'], 'item' => $pUrl]]];
+    ve_seo_head(['title' => $product['title'] . ' original en Venezuela | Alquimia Digital', 'desc' => $pDesc, 'canonical' => $pUrl, 'image' => $pImg, 'type' => 'product', 'jsonld' => [$ld, $crumb]]);
+} else {
+    ve_seo_head(['title' => 'Producto no encontrado | Alquimia Digital Venezuela', 'noindex' => true]);
+}
+?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">

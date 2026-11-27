@@ -341,3 +341,41 @@ function ve_cart_lines(): array {
     }
     return ['lines' => $lines, 'total' => round($total, 2)];
 }
+
+/* ───────────── SEO ───────────── */
+/** Texto plano recortado para meta descripción. */
+function ve_seo_text(string $s, int $max = 158): string {
+    $s = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($s), ENT_QUOTES, 'UTF-8')));
+    if (mb_strlen($s) <= $max) return $s;
+    $c = mb_substr($s, 0, $max - 1);
+    $sp = mb_strrpos($c, ' ');
+    return rtrim(($sp !== false && $sp > $max * 0.6 ? mb_substr($c, 0, $sp) : $c), " ,;:.") . '…';
+}
+/** URL absoluta de una imagen (propia o remota). */
+function ve_seo_abs_image(?string $img): string {
+    if (!$img) return ve_site_url() . '/imagenes/logo.png';
+    if (preg_match('#^https?://#', $img)) return $img;
+    return ve_site_url() . '/' . implode('/', array_map('rawurlencode', explode('/', ltrim($img, '/'))));
+}
+/** Imprime title, description, canonical, Open Graph, Twitter y JSON-LD. */
+function ve_seo_head(array $o): void {
+    $title = (string) ($o['title'] ?? ''); $desc = ve_seo_text((string) ($o['desc'] ?? ''));
+    $canon = (string) ($o['canonical'] ?? ''); $img = ve_seo_abs_image($o['image'] ?? null);
+    $type = (string) ($o['type'] ?? 'website');
+    echo '<title>' . h($title) . "</title>\n";
+    if ($desc !== '') echo '<meta name="description" content="' . h($desc) . "\">\n";
+    if (!empty($o['noindex'])) echo "<meta name=\"robots\" content=\"noindex,follow\">\n";
+    else echo "<meta name=\"robots\" content=\"index,follow,max-image-preview:large\">\n";
+    if ($canon !== '') echo '<link rel="canonical" href="' . h($canon) . "\">\n";
+    echo "<meta name=\"geo.region\" content=\"VE\">\n<meta property=\"og:locale\" content=\"es_VE\">\n";
+    echo '<meta property="og:site_name" content="Alquimia Digital Venezuela">' . "\n";
+    echo '<meta property="og:type" content="' . h($type) . '">' . "\n";
+    echo '<meta property="og:title" content="' . h($title) . '">' . "\n";
+    if ($desc !== '') echo '<meta property="og:description" content="' . h($desc) . '">' . "\n";
+    if ($canon !== '') echo '<meta property="og:url" content="' . h($canon) . '">' . "\n";
+    echo '<meta property="og:image" content="' . h($img) . '">' . "\n";
+    echo '<meta name="twitter:card" content="summary_large_image">' . "\n";
+    foreach ((array) ($o['jsonld'] ?? []) as $j) {
+        echo '<script type="application/ld+json">' . json_encode($j, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . "</script>\n";
+    }
+}
