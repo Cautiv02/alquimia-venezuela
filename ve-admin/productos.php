@@ -193,7 +193,7 @@ if ($id) {
 /* ── Listado ── */
 $q = trim((string) ($_GET['q'] ?? ''));
 $only = !empty($_GET['solo']);
-$sql = "SELECT p.id, p.title, p.status, vp.slug, vp.active, vp.title AS vtitle,
+$sql = "SELECT p.id, p.title, p.status, vp.slug, vp.active, vp.title AS vtitle, vp.image AS vimg, vp.short_desc AS vsd, vp.long_desc AS vld,
           (SELECT COUNT(*) FROM product_variants pv JOIN ve_prices pr ON pr.variant_id = pv.id WHERE pv.product_id = p.id) AS priced,
           (SELECT MIN(pr.price_usd) FROM product_variants pv JOIN ve_prices pr ON pr.variant_id = pv.id WHERE pv.product_id = p.id) AS minusd
         FROM products p LEFT JOIN ve_products vp ON vp.product_id = p.id WHERE p.status = 'activo'";
@@ -236,7 +236,10 @@ admin_header('Productos'); flash_show(); ?>
   <?php if (!$nVe): ?><a class="btn-a" href="?importar=1">Importar los 10 productos actuales</a><?php else: ?><a class="btn-a ghost" href="?importar=1">Importar los 10 originales</a><?php endif; ?></div>
 <table class="t"><tr><th>Producto (Chile)</th><th>En Venezuela</th><th>Desde</th><th></th></tr>
 <?php foreach ($rows as $r): ?><tr><td><?= h(ve_clean_text($r['title'])) ?></td>
-<td><?php if ($r['slug'] === null): ?><span class="muted">—</span><?php else: ?><span class="pill <?= $r['active'] && $r['priced'] ? 'entregado' : 'pendiente' ?>"><?= !$r['priced'] ? 'Sin precios' : ($r['active'] ? 'Visible' : 'Oculto') ?></span> <span class="tag"><?= h($r['slug']) ?></span><?php endif; ?></td>
+<td><?php if ($r['slug'] === null): ?><span class="muted">—</span><?php else: ?><span class="pill <?= $r['active'] && $r['priced'] ? 'entregado' : 'pendiente' ?>"><?= !$r['priced'] ? 'Sin precios' : ($r['active'] ? 'Visible' : 'Oculto') ?></span> <span class="tag"><?= h($r['slug']) ?></span>
+  <?php if ($r['slug'] !== null): $okI = trim((string) $r['vimg']) !== ''; $okD = trim((string) $r['vsd']) !== '' || trim((string) $r['vld']) !== ''; ?>
+  <br><span class="pill <?= $okI ? 'entregado' : 'pendiente' ?>" title="<?= $okI ? 'Foto propia' : 'Usa la foto de Chile' ?>">Foto <?= $okI ? 'propia' : 'de Chile' ?></span>
+  <span class="pill <?= $okD ? 'entregado' : 'pendiente' ?>" title="<?= $okD ? 'Descripción propia' : 'Usa la descripción de Chile' ?>">Texto <?= $okD ? 'propio' : 'de Chile' ?></span><?php endif; endif; ?></td>
 <td><?= $r['minusd'] !== null ? '$' . h(number_format((float) $r['minusd'], 2)) : '—' ?></td>
 <td><a class="btn-a ghost" href="?id=<?= (int) $r['id'] ?>"><?= $r['slug'] === null ? 'Agregar' : 'Editar' ?></a></td></tr>
 <?php endforeach; if (!$rows): ?><tr><td colspan="4" class="muted" style="text-align:center;padding:26px">Sin resultados.</td></tr><?php endif; ?></table>
